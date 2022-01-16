@@ -6,3 +6,4 @@
 inst/scripts/
 inst/data-raw/
 inst/extdata/
+*.Rproj
