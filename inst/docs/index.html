@@ -1,0 +1,307 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: CrawlR - Crawl, Parse, and Index</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+
+<h2>CrawlR - Crawl, Parse, and Index</h2>
+
+<h3>Description</h3>
+
+<p>Utilizes the curl package to crawl through a
+list of user supplied websites to given depth.
+Unlesss overriden, crawlR observes robots.txt.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+crawlR(seeds = NULL, work_dir = NULL, out_dir = NULL,
+  max_concurr = 2, max_host = 1, timeout = Inf, external_site = F,
+  sitemaps = F, crawl_delay = 10, max_size = 4e+06, regExIn = NULL,
+  regExOut = NULL, depth = 4, queue_scl = 1, topN = NULL,
+  max_urls_per_host = 10, n_threads = 1, parser = parseR)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>seeds</code></td>
+<td>
+<p>Seed URL's. If NULL, then the work_dir must containg a linkDB.  If
+additional seeds are provided after inital seeding, the new seed URL's
+will be added to linkDB and fetched - keeping the original seeds/fetched pages.</p>
+</td></tr>
+<tr valign="top"><td><code>work_dir</code></td>
+<td>
+<p>(Required) Working to store results.</p>
+</td></tr>
+<tr valign="top"><td><code>out_dir</code></td>
+<td>
+<p>Directory to store results. If NULL defaults to work directory.</p>
+</td></tr>
+<tr valign="top"><td><code>max_concurr</code></td>
+<td>
+<p>Max. total concurrent connections open at any given time.</p>
+</td></tr>
+<tr valign="top"><td><code>max_host</code></td>
+<td>
+<p>Max. total concurrent connections per host at any given time.</p>
+</td></tr>
+<tr valign="top"><td><code>timeout</code></td>
+<td>
+<p>Total (as in all url's in seed list) time per each iteration (for each depth).</p>
+</td></tr>
+<tr valign="top"><td><code>external_site</code></td>
+<td>
+<p>If true, crawler will follow external links.</p>
+</td></tr>
+<tr valign="top"><td><code>crawl_delay</code></td>
+<td>
+<p>time (in seconds) for calls to the same host.
+Only applies if the  time is not specified by the host's robots.txt.</p>
+</td></tr>
+<tr valign="top"><td><code>max_size</code></td>
+<td>
+<p>Max size of file or webpage to download and parse.</p>
+</td></tr>
+<tr valign="top"><td><code>regExIn</code></td>
+<td>
+<p>URL's matching this regular expression will be used.</p>
+</td></tr>
+<tr valign="top"><td><code>regExOut</code></td>
+<td>
+<p>URL's matching this reg-ex  will be filtered out, including URL's that match regExIn.</p>
+</td></tr>
+<tr valign="top"><td><code>depth</code></td>
+<td>
+<p>Crawl depth - A value of 1 only crawls the seed pages, 2 crawls links found on seeds, etc..</p>
+</td></tr>
+<tr valign="top"><td><code>queue_scl</code></td>
+<td>
+<p>(Deprecated) max_concur * queue_scl gives que.</p>
+</td></tr>
+<tr valign="top"><td><code>topN</code></td>
+<td>
+<p>Top num links to fetch per per link depth iteration.</p>
+</td></tr>
+<tr valign="top"><td><code>max_urls_per_host</code></td>
+<td>
+<p>Maximum URL's from each host when creating fetch list for each link depth.</p>
+</td></tr>
+<tr valign="top"><td><code>n_threads</code></td>
+<td>
+<p>Only applies to parsing.</p>
+</td></tr>
+<tr valign="top"><td><code>parser</code></td>
+<td>
+<p>Parsing function to use.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>After each iteration of crawling, the crawled
+pages are read from disk, parsed, and writen
+back to disk. The read/parse phase is done in
+parrallel using the future package
+</p>
+
+
+
+<pre>
+
+	## Setup
+	work_dir &lt;- 'E:/data_lake/crawl/AU5/'
+	max_concurr = 200        # max concurrent connections - total
+	max_concurr_invest = 100 # invest pages (10-k) are text heavy - too many connect may timeout
+	max_host = 1             # max concurrent connections - per host
+	crawl_delay = 30         # delay in seconds between sucessvie requests same host
+	timeout = Inf            # total time for crawling ALL urls
+
+
+	if(file.exists('./seed.txt')){
+
+	  ## Get seeds
+	  depth &lt;- 1
+	  topN &lt;- NULL
+	  out_dir &lt;- paste0(work_dir)
+
+	  fh &lt;- con('./seed.txt')
+	  seeds &lt;- readLines(fh)
+	  close(fh)
+
+	  ## Get initial pages
+	  crawlR::crawlR(
+		seeds = seeds,
+		work_dir = work_dir,
+		out_dir =  out_dir,
+		max_concurr = max_concurr,
+		max_host = max_host,
+		timeout = timeout,
+		external_site = F,
+		crawl_delay=crawl_delay,
+		max_size = 4e6,
+		regExOut = NULL,
+		regExIn = NULL,
+		depth = depth,
+		queue_scl = 1,
+		topN=NULL,
+		max_urls_per_host = 1,
+		n_threads = 1,
+		parser = crawlR:::parse_content)
+
+	  file.remove('./seed.txt')
+
+
+
+	  ## Get Initial Contact information
+	  depth &lt;- 1
+	  topN &lt;- NULL
+	  out_dir &lt;- paste0(work_dir,'contact/')
+
+	  contactFiltIn &lt;- list()
+	  contactFiltIn[paste(1:depth)]&lt;-"contact"
+
+	  contactFiltOut &lt;- list()
+	  contactFiltOut[paste0(1:depth)]&lt;-paste0(
+		"report|quarterly-report|annual-report|finance|invest|asset|",
+		"holding|10k|10-k|10q|10-q|quarterly|earning|annual|",
+		"study|studies|portfolio|project|press|announce|event|news|",
+		"completed|future|past|complete|construction|current");
+
+	  crawlR(
+		seeds = NULL,
+		work_dir = work_dir,
+		out_dir =  out_dir,
+		max_concurr = max_concurr,
+		max_host = max_host,
+		timeout = timeout,
+		external_site = F,
+		crawl_delay=crawl_delay,
+		max_size = 4e6,
+		regExOut = contactFiltOut,
+		regExIn = contactFiltIn,
+		depth = depth,
+		queue_scl = 1,
+		topN=NULL,
+		max_urls_per_host = 15,
+		n_threads = 2,
+		parser = crawlR:::parse_contact)
+	}
+
+
+	## Get Projects/News links
+	depth &lt;- 4
+	topN &lt;- 50000
+	out_dir &lt;- paste0(work_dir,'projects/')
+
+	projFiltIn &lt;- list()
+	projFiltIn[paste0(1:depth)]&lt;-paste0(
+	  "study|studies|portfolio|project|press|announce|event|news|",
+	  "completed|future|past|complete|construction|current");
+
+	projFiltOut &lt;- list()
+	projFiltOut[paste0(1:depth)]&lt;-paste0(
+	"career|job|finance|invest|asset|holding|10k|10-k|10q|",
+	"10-q|earnings|contact|team|quarter|annual");
+
+	crawlR(
+	  seeds = NULL,
+	  work_dir = work_dir,
+	  out_dir =  out_dir,
+	  max_concurr = max_concurr,
+	  max_host = max_host,
+	  timeout = timeout,
+	  external_site = F,
+	  crawl_delay=crawl_delay,
+	  max_size = 4e6,
+	  regExOut = projFiltOut,
+	  regExIn = projFiltIn,
+	  depth = depth,
+	  queue_scl = 1,
+	  topN=topN,
+	  max_urls_per_host = 15,
+	  n_threads = 2,
+	  parser = crawlR:::parse_content)
+
+
+	## Get Investment Articles
+	depth&lt;-3
+	topN &lt;- 50000
+	out_dir &lt;- paste0(work_dir,'invest/')
+
+	investFiltIn  &lt;- list()
+	investFiltOut &lt;- list()
+
+	investFiltIn[paste(1:depth)]&lt;-paste0(
+	  "report|quarterly-report|annual-report|finance|invest|asset|",
+	  "holding|10k|10-k|10q|10-q|quarterly|earning|annual");
+
+	investFiltOut[paste(1:depth)]&lt;-"career|job|contact|about|openings|team";
+
+	crawlR(
+	  seeds = NULL,
+	  work_dir = work_dir,
+	  out_dir =  out_dir,
+	  max_concurr = max_concurr,
+	  max_host = max_host,
+	  timeout = timeout,
+	  external_site = F,
+	  crawl_delay=crawl_delay,
+	  max_size = 4e6,
+	  regExOut = investFiltOut,
+	  regExIn = investFiltIn,
+	  depth = depth,
+	  queue_scl = 1,
+	  topN=topN,
+	  max_urls_per_host = 15,
+	  n_threads = 2,
+	  parser = crawlR:::parse_content)
+
+
+	## Get Career Articles
+	depth &lt;- 2
+	topN &lt;- 50000
+	out_dir &lt;- paste0(work_dir,'career/')
+
+	careerFiltIn &lt;- list()
+	careerFiltOut &lt;- list()
+
+	careerFiltIn[paste(1:depth)]&lt;-"career|job|opening|hiring|opening|work|team|join"
+
+	careerFiltOut[paste(1:depth)]&lt;-paste0(
+	  "project|press|announce|event|news|completed|future|past|complete|",
+	  "finance|invest|asset|holding|10k|10-k|10q|10-q|earnings|contact");
+
+	crawlR(
+	  seeds = NULL,
+	  work_dir = work_dir,
+	  out_dir =  out_dir,
+	  max_concurr = max_concurr,
+	  max_host = max_host,
+	  timeout = timeout,
+	  external_site = F,
+	  crawl_delay=crawl_delay,
+	  max_size = 4e6,
+	  regExOut = careerFiltOut,
+	  regExIn = careerFiltIn,
+	  depth = depth,
+	  queue_scl = 1,
+	  topN=topN,
+	  max_urls_per_host = 15,
+	  n_threads = 2,
+	  parser = crawlR:::parse_content)
+
+
+
+
+
+
+</pre>
+
+
+</body></html>
