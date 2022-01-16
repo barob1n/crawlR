@@ -1,0 +1,57 @@
+---
+title: <center> <h1>The Crawler</h1> </center>
+output:
+  pdf_document:
+    latex_engine: xelatex
+sansfont: Arial
+fig_crop: false
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures",
+  out.width = "100%",
+  fig.align = 'center'
+)
+```
+
+
+\newpage
+
+# CrawlR 
+
+Program responsible for crawling and parsing HTML.  Output 
+from this program is fed into the next stage - the pipeline.
+
+Web crawlers Apache Nutch and Scrapy were considered, but
+this crawler was eventually written in order to have more
+control/customization over the crawling process.
+
+* Basic process:
+  + inject seeds into linkDB 
+  + generate a fetch list from linkDB
+  + fetch created fetch_list
+  + parse fetched data
+  + update pageDB and linkDB
+  + if link_depth not yet reached, repeat
+
+
+The crawler scheduling is currently being fleshed out, but the current 
+plan is to assign a random ‘Re-Crawl Date’ , sometime between 2-4 weeks
+after each crawl –  This is to stagger the number of sites being crawled 
+at any given time and not kill the server. 
+\newline
+
+
+
+\begin{center}
+
+\includegraphics[height=5.5in]{man/figures/crawler.png}
+
+
+\end{center}
+
+\newpage
+

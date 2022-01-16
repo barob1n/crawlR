@@ -1,0 +1,8 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.httr-oauth
+inst/scripts/
+inst/data-raw/
+inst/extdata/
