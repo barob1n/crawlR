@@ -7,10 +7,10 @@
  list of user supplied websites.  
  
  Basic process is:
- 1. *Inject* seeds into LinkDB
- 2. *Generate* fetch list from LinkDB
+ 1. *Inject* seeds into linkDB
+ 2. *Generate* fetch list from linkDB
  3. *Fetch* links
- 4. *Update* LinkDB
+ 4. *Update* linkDB
  4. *Repeat*
 
  
@@ -73,7 +73,7 @@ Argument      |Description
 ```parser```     |     Parsing function to use.
 ```score_func```	|	URL Scoring Function.
 ```log_file```	|	Name of log file. If null, writes to stdout().
-```seeds_only```	|	If true, only seeds will be pulled from LinkDB.
+```seeds_only```	|	If true, only seeds will be pulled from linkDB.
 ```readability_content```	|	Process content using readability python module.
 ```overwrite```	|	If true, data for url will be overwritten in crawlDB.
 ```min_score```	|	Minimum score during generate for urls.
@@ -95,13 +95,12 @@ Argument      |Description
  
 
  # Crawl all seeds on 1st iteration, but only follow links
- # containing "news" or "announce"  for 2nd/3rd iteration.
  
  # Run Crawler.
  crawlR(seeds = seeds,
  work_dir="~/crawl/",
- out_dir = "~/crawl/news/",
- max_concurr = 100,
+ out_dir = "~/crawl/",
+ max_concurr = 50,
  max_host = 1,
  timeout = Inf,
  external_site = F,
@@ -110,7 +109,7 @@ Argument      |Description
  max_size = 4e6,
  regExOut = url_filter,
  regExIn = NULL,
- depth = 4,
+ depth = 2,
  queue_scl = 1,
  topN=20000,
  max_urls_per_host = 10,

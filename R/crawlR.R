@@ -35,9 +35,9 @@
 #' @param parser Parsing function to use.
 #' @param score_func URL Scoring Function.
 #' @param log_file Name of log file. If null, writes to stdout().
-#' @param seeds_only If true, only seeds will be pulled from LinkDB.
+#' @param seeds_only If true, only seeds will be pulled from linkDB.
 #' @param readability_content process content using readability
-#' @param overwrite If true, data for url will be overwritten in crawlDB.
+#' @param overwrite If true, data for url will be overwritten in linkDB.
 #' @param min_score minimum score during generate for urls
 #' @import curl
 #' @import xml2
