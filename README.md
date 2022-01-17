@@ -91,15 +91,15 @@ Argument      |Description
 ```r 
  
  # Create Seed List
- seeds <- c("https://cran.r-project.org/", "https://www.wikipedia.org/")
+ seeds <- c("https://www.cnn.com", "https://www.npr.org")
  
 
  # Crawl all seeds on 1st iteration, but only follow links
  
  # Run Crawler.
  crawlR(seeds = seeds,
- work_dir="~/crawl/",
- out_dir = "~/crawl/",
+ work_dir="~/crawl",
+ out_dir = "~/crawl/news/",
  max_concurr = 50,
  max_host = 1,
  timeout = Inf,
@@ -107,7 +107,7 @@ Argument      |Description
  sitemaps = F,
  crawl_delay=10,
  max_size = 4e6,
- regExOut = url_filter,
+ regExOut = NULL,
  regExIn = NULL,
  depth = 2,
  queue_scl = 1,
@@ -117,17 +117,14 @@ Argument      |Description
  parser = parseR)
  
  
- # Run again with  a differnt URL filter and  save
- # to different directory. The same directory could
- # have been used - previous results WOULD NOT
- # have been written over.
+## Run again with URL filters.
  
- url_filter[[1]] <- ".*financial*|.*invest.*"
- url_filter[[2]] <- ".*financial*|.*invest.*"
+filter_in=paste0("police,shooting,gun control")
+filter_out=paste0("sports,weather")
  
  crawlR(seeds = NULL,
  work_dir= "~/crawl/",
- out_dir = "~/crawl/invest/",
+ out_dir = "~/crawl/news/",
  max_concurr = 100,
  max_host = 1,
  timeout = Inf,
@@ -135,8 +132,8 @@ Argument      |Description
  sitemaps = F,
  crawl_delay=10,
  max_size = 4e6,
- regExOut = url_filter,
- regExIn = NULL,
+ regExOut = filter_in,
+ regExIn = filter_out,
  depth = 2,
  queue_scl = 1,
  topN=20000,
@@ -151,7 +148,7 @@ Argument      |Description
  
  crawlR(seeds = new_seeds,
  work_dir= "~/crawl/",
- out_dir = "~/crawl/",
+ out_dir = "~/crawl/auto/",
  max_concurr = 100,
  max_host = 1,
  timeout = Inf,
