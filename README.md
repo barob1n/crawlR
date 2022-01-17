@@ -76,7 +76,7 @@ Argument      |Description
 ```seeds_only```	|	If true, only seeds will be pulled from LinkDB.
 ```readability_content```	|	Process content using readability python module.
 ```overwrite```	|	If true, data for url will be overwritten in crawlDB.
-```min_score```	|	minimum score during generate for urls
+```min_score```	|	Minimum score during generate for urls.
 
 ## Details
 
