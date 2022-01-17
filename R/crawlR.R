@@ -12,7 +12,7 @@
 #'
 #' @param seeds Seed url's. If null, then the work_dir must contain a linkDB.  If
 #'     additional seeds are provided after inital seeding, the new seed url's
-#'     will be added to linkDB and fetched - keeping the original seeds/fetched pages.
+#'     will be added to linkDB and fetched.
 #' @param work_dir (Required) Main working directory.
 #' @param out_dir  Directory to store crawled and parsed html If null defaults to work directory.
 #' @param max_concurr Max. total concurrent connections open at any given time.

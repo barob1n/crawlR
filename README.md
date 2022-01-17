@@ -52,7 +52,7 @@ crawlR(
 
 Argument      |Description
 ------------- |----------------
-```seeds```     |     Seed URL's. If NULL, then the work_dir must containg a linkDB.  If additional seeds are provided after inital seeding, the new seed URL's will be added to linkDB and fetched - keeping the original seeds/fetched pages.
+```seeds```     |     Seed URL's. If NULL, then the work_dir must containg a linkDB.  If additional seeds are provided after inital seeding, the new seed URL's will be added to linkDB and fetched.
 ```work_dir```     |     (Required) Working to store results.
 ```out_dir```     |     Directory to store results. If NULL defaults to work directory.
 ```max_concurr```     |     Max. total concurrent connections open at any given time.
