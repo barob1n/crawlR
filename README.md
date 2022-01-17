@@ -19,10 +19,33 @@
 
 ```r
 crawlR(
-    seeds = NULL, work_dir=NULL, out_dir = NULL, max_concurr = 50, max_host = 1, timeout = Inf, timeout_request=30, external_site = F,
-    sitemaps = F, crawl_delay=30, max_size = 10e6, regExIn = NULL, regExOut = NULL, depth = 1, max_depth=3, queue_scl = 1,
-    topN=NULL, max_urls_per_host = 10, n_threads=1, parser = crawlR:::parse_content, score_func=NULL, log_file = NULL, seeds_only = F, crawl_int=NULL,
-    readability_content=F, overwrite = F, min_score=0.0)
+    seeds = NULL,
+    work_dir=NULL,
+    out_dir = NULL,
+    max_concurr = 50,
+    max_host = 1,
+    timeout = Inf,
+    timeout_request=30,
+    external_site = F,
+    sitemaps = F,
+    crawl_delay=30,
+    max_size = 10e6,
+    regExIn = NULL,
+    regExOut = NULL,
+    depth = 1,
+    max_depth=3,
+    queue_scl = 1,
+    topN=NULL,
+    max_urls_per_host = 10,
+    n_threads=1,
+    parser = crawlR:::parse_content,
+    score_func=NULL,
+    log_file = NULL,
+    seeds_only = F,
+    crawl_int=NULL,
+    readability_content=F,
+    overwrite = F,
+    min_score=0.0)
 ```
 
 
