@@ -11,14 +11,15 @@ crawlR(
   max_concurr = 100,
   max_host = 1,
   timeout = Inf,
+  timeout_request = 30,
   external_site = F,
   sitemaps = F,
   crawl_delay = 30,
   max_size = 4e+06,
   regExIn = NULL,
   regExOut = NULL,
-  depth = 4,
-  max_depth = 4,
+  depth = 1,
+  max_depth = 3,
   queue_scl = 1,
   topN = NULL,
   max_urls_per_host = 10,
@@ -48,6 +49,8 @@ will be added to linkDB and fetched - keeping the original seeds/fetched pages.}
 \item{max_host}{Max. total concurrent connections per host at any given time.}
 
 \item{timeout}{Total (as in all url's in seed list) time per each iteration (for each depth).}
+
+\item{timeout_request}{per url timeout.}
 
 \item{external_site}{If true, crawler will follow external links.}
 

@@ -7,7 +7,6 @@
 updateR(
   work_dir = NULL,
   out_dir = NULL,
-  crawl_delay = 5,
   log_file = NULL,
   overwrite = F,
   score_func = NULL
@@ -18,15 +17,11 @@ updateR(
 
 \item{out_dir}{(Required) Working directory for this crawl.}
 
-\item{crawl_delay}{crawl_delay}
-
 \item{log_file}{Name of log file. If null, writes to stdout().}
 
 \item{overwrite}{If true, all crawled links will be entered into DB as fresh unseen links.}
 
 \item{score_func}{Function to score urls}
-
-\item{max_concurr}{max conn.}
 }
 \value{
 Returns character vector of links, or error message.

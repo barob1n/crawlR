@@ -12,6 +12,7 @@ fetchR_parseR(
   max_concurr = NULL,
   max_host = NULL,
   timeout = Inf,
+  timeout_request = timeout_request,
   queue_scl = 1,
   comments = "",
   save_to_disk = T,
@@ -34,7 +35,9 @@ fetchR_parseR(
 
 \item{max_host}{Max. total concurrent connections per host at any given time.}
 
-\item{timeout}{Timeout time}
+\item{timeout}{Total (all requests) timeout}
+
+\item{timeout_request}{per request timeout}
 
 \item{queue_scl}{Scaler}
 

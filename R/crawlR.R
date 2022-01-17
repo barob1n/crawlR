@@ -37,7 +37,6 @@
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @param seeds_only only seeds
 #' @param readability_content process content using readability
-#' @param order_path order by path length ascending or descending
 #' @param overwrite If true, data for url will be overwritten in crawlDB.
 #' @param min_score minimum score during generate for urls
 #' @import curl
@@ -58,8 +57,7 @@
 #' library(crawlR)
 #'
 #' work_dir <- '/usr/local/solr/crawl/'
-#' max_concurr = 150        # max concurrent connections - total
-#' max_concurr_invest = 100 # invest pages (10-k) are text heavy
+#' max_concurr = 50         # max concurrent connections - total
 #' max_host = 1             # max concurrent connections - per host
 #' crawl_delay = 30         # delay in seconds between sucessvie requests same host
 #' timeout = Inf            # total time for crawling ALL urls
@@ -100,14 +98,14 @@ crawlR <- function(
     seeds = NULL,
     work_dir=NULL,
     out_dir = NULL,
-    max_concurr = 100,
+    max_concurr = 50,
     max_host = 1,
     timeout = Inf,
     timeout_request=30,
     external_site = F,
     sitemaps = F,
     crawl_delay=30,
-    max_size = 4e6,
+    max_size = 10e6,
     regExIn = NULL,
     regExOut = NULL,
     depth = 1,
@@ -116,43 +114,15 @@ crawlR <- function(
     topN=NULL,
     max_urls_per_host = 10,
     n_threads=1,
-    parser = crawlR:::parse_content_fetch,
+    parser = crawlR:::parse_content,
     score_func=NULL,
     log_file = NULL,
     seeds_only = F,
     crawl_int=NULL,
     readability_content=F,
-    order_path='asc',
     overwrite = F,
     min_score=0.0){
 
-  # seeds = NULL
-  # work_dir=NULL
-  # out_dir = NULL
-  # max_concurr = 100
-  # max_host = 1
-  # timeout = Inf
-  # external_site = F
-  # sitemaps = F
-  # crawl_delay=30
-  # max_size = 4e6
-  # regExIn = NULL
-  # regExOut = NULL
-  # depth = 4
-  # max_depth=4
-  # queue_scl = 1
-  # topN=NULL
-  # max_urls_per_host = 10
-  # n_threads=1
-  # parser = crawlR:::parse_content_fetch
-  # score_func=NULL
-  # log_file = NULL
-  # seeds_only = F
-  # crawl_int=NULL
-  # readability_content=F
-  # order_path='asc'
-  # overwrite = F
-  # min_score=0.4
 
     tryCatch({
       val<-'Error message.'
@@ -201,12 +171,8 @@ crawlR <- function(
 
         st_arr[lvl]<-as.numeric(Sys.time())
 
-        #  lvl<-1
         write_log(paste('crawlR:  Depth - ',lvl,'of', depth), log_file)
-        # thisFiltIn  <- NULL
-        # thisFiltOut <- NULL
-        # if(paste(lvl) %in% names(regExIn)) thisFiltIn   <- regExIn[[paste(lvl)]]
-        # if(paste(lvl) %in% names(regExOut)) thisFiltOut <- regExOut[[paste(lvl)]]
+
         write_log(paste('crawlR: Generating Fetch List -', Sys.time()), log_file)
 
         val<-generateR(out_dir=out_dir,
@@ -282,10 +248,8 @@ crawlR <- function(
       write_log(paste0('---------------------------------------------------------'), log_file)
     }, error = function(e){
       write_log(paste('crawlR: ',e), log_file)
-      #class(val)<-'error'
       stop(paste(val))
     }, finally = {
-     # if(class(log_con_cr)[1]=="file") close(log_con_cr)
     })
 
 }

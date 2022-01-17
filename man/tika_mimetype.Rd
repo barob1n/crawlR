@@ -4,7 +4,9 @@
 \name{tika_mimetype}
 \alias{tika_mimetype}
 \title{Mimetypes from tika}
-\format{An object of class \code{data.frame} with 853 rows and 4 columns.}
+\format{
+An object of class \code{data.frame} with 853 rows and 4 columns.
+}
 \usage{
 tika_mimetype
 }

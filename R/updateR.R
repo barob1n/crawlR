@@ -5,8 +5,6 @@
 #'
 #' @param work_dir (Required) Working directory for this crawl.
 #' @param out_dir (Required) Working directory for this crawl.
-#' @param max_concurr max conn.
-#' @param crawl_delay crawl_delay
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @param overwrite If true, all crawled links will be entered into DB as fresh unseen links.
 #' @param score_func Function to score urls
@@ -15,15 +13,13 @@
 #'
 updateR <- function(work_dir = NULL,
                     out_dir=NULL,
-                    crawl_delay=5,
                     log_file = NULL,
                     overwrite = F,
                     score_func=NULL
                     ){
-  load(system.file("extdata", 'url_vectorizer.rda', package = "crawlRpipeline"))
-  load(system.file("extdata", 'glm_url_model.rda', package = "crawlRpipeline"))
-  load(system.file("extdata", 'url_tfidf.rda', package = "crawlRpipeline"))
-  load(system.file("extdata", 'url_lsa.rda', package = "crawlRpipeline"))
+  
+  ## enviroment to hold models used by scoring function
+  score_func_env<-env()
 
   tryCatch({
 
@@ -114,11 +110,8 @@ updateR <- function(work_dir = NULL,
       })
     }
 
-    ## unload model files
-    rm(url_vectorizer)
-    rm(glm_url_model)
-    rm(url_tfidf)
-    rm(url_lsa)
+    ## unload files used by score func
+    rm(list=ls(score_func_env),envir=score_func_env)
 
 
     if(overwrite){q<-" insert or replace into linkDB "}else{ q<-" insert or ignore into linkDB  "}

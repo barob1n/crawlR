@@ -4,9 +4,11 @@
 \alias{create_fetch_list}
 \title{Creates a Fetch List from linkDB File}
 \usage{
-create_fetch_list(fetch_list, crawl_delay)
+create_fetch_list(fetch_list, crawl_delay = 30)
 }
 \arguments{
+\item{crawl_delay}{delay between successive requests to server.}
+
 \item{linkDB}{linkDB}
 }
 \value{

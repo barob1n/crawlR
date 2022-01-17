@@ -163,46 +163,44 @@ writeR <- function(out_dir=NULL,res=NULL,compress=T,extLookUp=NULL){
   return(NA)
 }
 
-#' Returns New URL
-#'
-#' Internal use by crawlR package.
-#'
-#' @param new_root Root to draw next url from.
-#' @return Returns filename of output.
-#'
-get_url_from_root1 <- function(new_root,links,wait_table){
-  #this_link <- links$url[[new_root]][1]
-  this_link <- links[[new_root]][1]
-  #links$url[[new_root]] <- links$url[[new_root]][-1]
+# #' Returns New URL
+#  #'
+#  #' Internal use by crawlR package.
+#  #'
+#  #' @param new_root Root to draw next url from.
+#  #' @return Returns filename of output.
+#  #'
+#  get_url_from_root1 <- function(new_root,links,wait_table){
+#    #this_link <- links$url[[new_root]][1]
+#    this_link <- links[[new_root]][1]
+#    #links$url[[new_root]] <- links$url[[new_root]][-1]
+#  
+#    if(NROW(links[[new_root]])<=1){
+#      idx <- which(wait_table$url %in% new_root)
+#      wait_table$url<-wait_table$url[-idx]
+#      wait_table$dt<-wait_table$dt[-idx]
+#      wait_table$queue<-wait_table$queue[-idx]
+#      #links$url[[new_root]] <- NULL
+#      #rm(links[[new_root]])
+#      rm(list=new_root, envir=links)
+#    }else{
+#      links[[new_root]] <- links[[new_root]][-1]
+#    }
+#  
+#  
+#    return(this_link)
+#  }
 
-  if(NROW(links[[new_root]])<=1){
-    idx <- which(wait_table$url %in% new_root)
-    wait_table$url<-wait_table$url[-idx]
-    wait_table$dt<-wait_table$dt[-idx]
-    wait_table$queue<-wait_table$queue[-idx]
-    #links$url[[new_root]] <- NULL
-    #rm(links[[new_root]])
-    rm(list=new_root, envir=links)
-  }else{
-    links[[new_root]] <- links[[new_root]][-1]
-  }
-
-
-  return(this_link)
-}
-
-#' Returns the Root of a Url
-#'
-#' Internal use by crawlR package.
-#'
-#' @param urls List of urls.
-#' @return Returns filename of output.
-#'
-get_root_from_url <- function(urls){
-  #domain <- gsub("http://|https://|www\\.", "", urls)
-  #domain <- gsub("(.*)(")
-  return(xml2::url_parse(urls))
-}
+#  #' Returns the Root of a Url
+#  #'
+#  #' Internal use by crawlR package.
+#  #'
+#  #' @param urls List of urls.
+#  #' @return Returns filename of output.
+#  #'
+#  get_root_from_url <- function(urls){
+#    return(xml2::url_parse(urls))
+#  }
 #
 # library(robotstxt)
 # paths_allowed("http://google.com/")
@@ -210,21 +208,20 @@ get_root_from_url <- function(urls){
 # robotstxt::parse_robotstxt()
 # rtxt <- robotstxt(domain="wikipedia.org")
 
-
-
-#' Filter Out Url's
-#'
-#' Filter out URL's
-#'
-#' @param links Links to be filtered.
-#' @param urlRegExFilterOut RegEX to filter with.
-#' @return filtered list of links
-#' @export
-#'
-do_filt_out <- function(url,regExOut){
-  if(is.null(regExOut)) return((rep(T,length(url))))
-  return(!grepl(regExOut,url,ignore.case = T))
-}
+ 
+#  #' Filter Out Url's
+#  #'
+#  #' Filter out URL's
+#  #'
+#  #' @param links Links to be filtered.
+#  #' @param urlRegExFilterOut RegEX to filter with.
+#  #' @return filtered list of links
+#  #' @export
+#  #'
+#  do_filt_out <- function(url,regExOut){
+#    if(is.null(regExOut)) return((rep(T,length(url))))
+#    return(!grepl(regExOut,url,ignore.case = T))
+# }
 
 #' Normalize Url's
 #'
@@ -259,10 +256,11 @@ normalize_url <- function(url){
 #'
 #'
 #' @param linkDB linkDB
+#' @param crawl_delay delay between successive requests to server.
 #' @return fetchable list
 #' @export
 #'
-create_fetch_list <- function(fetch_list,crawl_delay){
+create_fetch_list <- function(fetch_list,crawl_delay=30){
 
   fetch_list<-split(fetch_list,fetch_list$server)
   fetch_list<-lapply(fetch_list,function(x) {
@@ -291,49 +289,50 @@ create_fetch_list <- function(fetch_list,crawl_delay){
 }
 
 
-#' Processes Fetched Link List
-#'
-#'
-#' @param fetched_links Links from fetch phase.
-#' @return fetchable list
-#' @export
-#'
-process_fetched_links <- function(fetched_links,fetch_list){
-  if(NROW(fetched_links)==0) return(NULL)
-  origin_url<-normalize_url(names(fetched_links))
-  fetched_links<-lapply(origin_url,function(x){
-    urls<-na.omit(normalize_url(fetched_links[[x]]))
-    if(NROW(urls)==0)return()
-    urls <- xml2::url_parse(unlist(urls))
+#	#' Processes Fetched Link List
+#	#'
+#	#'
+#	#' @param fetched_links Links from fetch phase.
+#	#' @return fetchable list
+#	#' @export
+#	#'
+#	process_fetched_links <- function(fetched_links,fetch_list){
+#	  if(NROW(fetched_links)==0) return(NULL)
+#	  origin_url<-normalize_url(names(fetched_links))
+#	  fetched_links<-lapply(origin_url,function(x){
+#		urls<-na.omit(normalize_url(fetched_links[[x]]))
+#		if(NROW(urls)==0)return()
+#		urls <- xml2::url_parse(unlist(urls))
+#
+#		urls$url <- paste0(urls$scheme,"://",urls$server,urls$path)
+#		urls$url <- ifelse(urls$query !="", paste0(urls$url,'?',urls$query),urls$url)
+#		if(urls$query !="") urls$url<-paste0(urls$url,'?',urls$query)
+#		urls$url <- gsub('\\?$|/$','',urls$url)
+#		urls$crawled<-0
+#		urls$depth<-0
+#		urls$crawl_int <- fetch_list$crawl_delay[match(urls$server, fetch_list$server)]
+#		urls$crawl_int[is.na(urls$crawl_int)]<-sample(30:60,sum(is.na(urls$crawl_int)),replace=T)
+#		if(x %in% fetch_list$url){
+#		  urls$depth<-fetch_list$depth[fetch_list$url==x]+1
+#		}
+#		urls
+#	  })
+#
+#	  fetched_links<-do.call(rbind,fetched_links)
+#	  # fetched_links <- na.omit(unlist(lapply(unlist(fetched_links),function(x) normalize_url(x))))
+#	  #
+#	  # fetched_links <- na.omit(unlist(lapply(unlist(fetched_links),function(x) normalize_url(x))))
+#	  # #cnt <- unlist(lapply(fetched_links, function(x) length(x)))
+#	  # if(NROW(fetched_links)==0) return(NULL)
+#	  # fetched_links <- xml2::url_parse(unlist(fetched_links))
+#	  #
+#	  # fetched_links$url <- paste0(fetched_links$scheme,"://",fetched_links$server,fetched_links$path,'?',fetched_links$query)
+#	  # fetched_links$url <- gsub('\\?$|/$','',fetched_links$url)
+#	  fetched_links <- fetched_links[!duplicated(paste(fetched_links$server, fetched_links$path)), ]
+#	  fetched_links <- fetched_links[grepl('http|https',paste(fetched_links$scheme)) & fetched_links$server != "",]
+#	  return(fetched_links)
+# }
 
-    urls$url <- paste0(urls$scheme,"://",urls$server,urls$path)
-    urls$url <- ifelse(urls$query !="", paste0(urls$url,'?',urls$query),urls$url)
-    if(urls$query !="") urls$url<-paste0(urls$url,'?',urls$query)
-    urls$url <- gsub('\\?$|/$','',urls$url)
-    urls$crawled<-0
-    urls$depth<-0
-    urls$crawl_int <- fetch_list$crawl_delay[match(urls$server, fetch_list$server)]
-    urls$crawl_int[is.na(urls$crawl_int)]<-sample(30:60,sum(is.na(urls$crawl_int)),replace=T)
-    if(x %in% fetch_list$url){
-      urls$depth<-fetch_list$depth[fetch_list$url==x]+1
-    }
-    urls
-  })
-
-  fetched_links<-do.call(rbind,fetched_links)
-  # fetched_links <- na.omit(unlist(lapply(unlist(fetched_links),function(x) normalize_url(x))))
-  #
-  # fetched_links <- na.omit(unlist(lapply(unlist(fetched_links),function(x) normalize_url(x))))
-  # #cnt <- unlist(lapply(fetched_links, function(x) length(x)))
-  # if(NROW(fetched_links)==0) return(NULL)
-  # fetched_links <- xml2::url_parse(unlist(fetched_links))
-  #
-  # fetched_links$url <- paste0(fetched_links$scheme,"://",fetched_links$server,fetched_links$path,'?',fetched_links$query)
-  # fetched_links$url <- gsub('\\?$|/$','',fetched_links$url)
-  fetched_links <- fetched_links[!duplicated(paste(fetched_links$server, fetched_links$path)), ]
-  fetched_links <- fetched_links[grepl('http|https',paste(fetched_links$scheme)) & fetched_links$server != "",]
-  return(fetched_links)
-}
 
 #' Queue a Batch of URL's
 #'
@@ -414,17 +413,6 @@ grep_meta<-'content-language|description|keywords|twitter:card|twitter:title|twi
     meta_doc<- doc %>% rvest::html_nodes('meta')
     meta_content<-rvest::html_attr(meta_doc, "content")
     meta_name<-rvest::html_attr(meta_doc, "name")
-    meta_prop<-rvest::html_attr(meta_doc, "property")
-
-    ## get meta data names
-    #idx<-which(!is.na(meta_name) & meta_name %in% names(map_meta))
-    #idx<-stringr::str_detect(meta_name, grep_meta) & !is.na(meta_name)
-    #vals[['meta']][meta_name[idx]]<- meta_content[idx]
-
-    ## get meta data properties
-    #idx<-which(!is.na(meta_prop) & meta_prop %in% names(map_meta))
-    #idx<-stringr::str_detect(meta_prop, grep_meta) & !is.na(meta_prop)
-    #vals[['meta']][meta_prop[idx]]<- meta_content[idx]
 
 
     ## looking for any dates
@@ -507,15 +495,6 @@ parse_content <- function(res){
 
   filter_tags <- function(tag){
     tag_docs <- rvest::html_nodes(doc, tag ) %>% rvest::html_text()
-    #if(length(tag_docs)==0) return("")
-    # tag_docs <- unlist(lapply(toString(tag_docs), function(x){
-    #
-    #   x <- enc2native(x)
-    #   x <- gsub('<a.*?/a>','',x) %>% rvest::html() %>% rvest::html_nodes(tag) %>% rvest::html_text(trim=T)
-    #   x <- x[x!=""]
-    #   x
-    #
-    # }))
     return(tag_docs)
   }
 
@@ -546,12 +525,7 @@ parse_content <- function(res){
     vals <- list()
     vals[['title']]   <- paste(rvest::html_nodes(doc, "title") %>% rvest::html_text(),collapse= ' ')
     vals[['content']] <- filter_tags("p")
-    vals[['span']] <- filter_tags("span")
     vals[['h1']] <- filter_tags("h1")
-    vals[['h2']] <- filter_tags("h2")
-    vals[['h3']] <- filter_tags("h3")
-    vals[['h4']] <- filter_tags("h4")
-
     vals$meta <- parse_meta(doc,map_meta=map_meta)
 
     return(vals)
@@ -560,57 +534,57 @@ parse_content <- function(res){
 }
 
 
-#' Parse Contact
-#'
-#' Taken from crawl example given in the curl package.
-#'
-#' @param res Return value from curl.
-#' @return Returns character vector of links, or error message.
-#' @export
-#'
-
-parse_contact <- function(res){
-
-  getThis <- function(page_list=NULL, this=NULL, innermost=T){
-    if(length(page_list)==0) return(NA)
-    idx<-unlist(lapply(page_list, function(x){
-      grepl(this,x, ignore.case = T)
-    }))
-
-    if(!innermost) return(page_list[idx])
-    idx2<-1:length(idx)
-    idx <- max(idx2[idx])
-    return(page_list[ idx] )
-  }
-
-  url<-'https://www.electranet.com.au/contact/'
-  doc <-  rvest::html(url)
-  if(length(doc)==0) return(NA)
-
-  tryCatch({
-    doc <- rvest::html(res)
-    vals <- list()
-
-    address <-NULL
-    address <-doc %>% rvest::xml_nodes('address')  %>% rvest::html_text(trim=T)
-
-    divs <-doc %>% rvest::xml_nodes('div')
-
-    if(length(divs)==0) return(NA)
-    contact <- getThis(divs, 'phone:|tel:address') %>% rvest::html_children() %>% rvest::html_text(trim=T)
-
-    a <-doc %>% rvest::xml_nodes('a')
-    social <- unlist(getThis(a, 'facebook|linkedin|instagram',innermost=F) %>% rvest::html_attr('href'))
-    vals$contact <- c(address,contact)
-    vals$contact <- gsub('\\r\\n|\\n|\\t',' ', vals$contact)
-    vals$facebook <- social[grepl('www.facebook.com', social)]
-    vals$linkedin <- social[grepl('www.linkedin.com', social)]
-    vals$instagram <- social[grepl('www.instagram.com', social)]
-
-    return(vals)
-
-  }, error = function(e){return(NA)} )
-}
+# #' Parse Contact
+# #'
+# #' Taken from crawl example given in the curl package.
+# #'
+# #' @param res Return value from curl.
+# #' @return Returns character vector of links, or error message.
+# #' @export
+# #'
+# 
+# parse_contact <- function(res){
+# 
+#   getThis <- function(page_list=NULL, this=NULL, innermost=T){
+#     if(length(page_list)==0) return(NA)
+#     idx<-unlist(lapply(page_list, function(x){
+#       grepl(this,x, ignore.case = T)
+#     }))
+# 
+#     if(!innermost) return(page_list[idx])
+#     idx2<-1:length(idx)
+#     idx <- max(idx2[idx])
+#     return(page_list[ idx] )
+#   }
+# 
+#   url<-'https://www.electranet.com.au/contact/'
+#   doc <-  rvest::html(url)
+#   if(length(doc)==0) return(NA)
+# 
+#   tryCatch({
+#     doc <- rvest::html(res)
+#     vals <- list()
+# 
+#     address <-NULL
+#     address <-doc %>% rvest::xml_nodes('address')  %>% rvest::html_text(trim=T)
+# 
+#     divs <-doc %>% rvest::xml_nodes('div')
+# 
+#     if(length(divs)==0) return(NA)
+#     contact <- getThis(divs, 'phone:|tel:address') %>% rvest::html_children() %>% rvest::html_text(trim=T)
+# 
+#     a <-doc %>% rvest::xml_nodes('a')
+#     social <- unlist(getThis(a, 'facebook|linkedin|instagram',innermost=F) %>% rvest::html_attr('href'))
+#     vals$contact <- c(address,contact)
+#     vals$contact <- gsub('\\r\\n|\\n|\\t',' ', vals$contact)
+#     vals$facebook <- social[grepl('www.facebook.com', social)]
+#     vals$linkedin <- social[grepl('www.linkedin.com', social)]
+#     vals$instagram <- social[grepl('www.instagram.com', social)]
+# 
+#     return(vals)
+# 
+#   }, error = function(e){return(NA)} )
+# }
 
 
 
