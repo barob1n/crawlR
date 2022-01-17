@@ -11,7 +11,7 @@
  2. *Generate* fetch list from LinkDB.
  3. *Fetch* links.
  4. *Update* LinkDB.
- 4. Repeat.
+ 4. *Repeat*.
 
  
 
