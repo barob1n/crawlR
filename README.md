@@ -3,10 +3,17 @@
 ## Description
 
 
- Utilizes the curl package to crawl through a
- list of user supplied websites to given depth.
- Unlesss overriden, crawlR observes robots.txt.
+ Batch based web crawler that utilizes the asynchronous features of R' curl package to crawl through a
+ list of user supplied websites.  
+ 
+ Basic process is:
+ 1. Inject seeds into LinkDB.
+ 2. Generate a fetch list from LinkDB.
+ 3. Fetch links from fetch list.
+ 4. Update LinkDB with fetched links.
+ 4. Repeat.
 
+ 
 
 ## Usage
 
