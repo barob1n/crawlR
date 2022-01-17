@@ -53,8 +53,7 @@ Argument      |Description
 
  After each iteration of crawling, the crawled
  pages are read from disk, parsed, and writen
- back to disk. The read/parse phase is done in
- parrallel using the future package
+ back to disk. 
 
 
 ## Examples
@@ -64,17 +63,9 @@ Argument      |Description
  # Create Seed List
  seeds <- c("https://cran.r-project.org/", "https://www.wikipedia.org/")
  
- # Set up URL filters.
- url_filter <- list()
- 
- # No filter for first iteration.
- url_filter[[1]] <- NA
- 
+
  # Crawl all seeds on 1st iteration, but only follow links
  # containing "news" or "announce"  for 2nd/3rd iteration.
- 
- url_filter[[2]] <- ".*news.*|.*announc.*"
- url_filter[[3]] <- ".*news.*|.*announc.*"
  
  # Run Crawler.
  crawlR(seeds = seeds,
