@@ -7,7 +7,7 @@
  list of user supplied websites.  
  
  Basic process is:
- 1. Inject seeds into LinkDB.
+ 1. *Inject* seeds into LinkDB.
  2. Generate a fetch list from LinkDB.
  3. Fetch links from fetch list.
  4. Update LinkDB with fetched links.
