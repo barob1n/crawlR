@@ -8,14 +8,13 @@ crawlR(
   seeds = NULL,
   work_dir = NULL,
   out_dir = NULL,
-  max_concurr = 100,
+  max_concurr = 50,
   max_host = 1,
   timeout = Inf,
   timeout_request = 30,
   external_site = F,
-  sitemaps = F,
   crawl_delay = 30,
-  max_size = 4e+06,
+  max_size = 1e+07,
   regExIn = NULL,
   regExOut = NULL,
   depth = 1,
@@ -24,13 +23,12 @@ crawlR(
   topN = NULL,
   max_urls_per_host = 10,
   n_threads = 1,
-  parser = crawlR:::parse_content_fetch,
+  parser = crawlR:::parse_content,
   score_func = NULL,
   log_file = NULL,
   seeds_only = F,
   crawl_int = NULL,
   readability_content = F,
-  order_path = "asc",
   overwrite = F,
   min_score = 0
 )
@@ -38,7 +36,7 @@ crawlR(
 \arguments{
 \item{seeds}{Seed url's. If null, then the work_dir must contain a linkDB.  If
 additional seeds are provided after inital seeding, the new seed url's
-will be added to linkDB and fetched - keeping the original seeds/fetched pages.}
+will be added to linkDB and fetched.}
 
 \item{work_dir}{(Required) Main working directory.}
 
@@ -63,7 +61,7 @@ Only applies if the  time is not specified by the host's robots.txt.}
 
 \item{regExOut}{url's matching this reg-ex  will be filtered out, including url's that match regExIn.}
 
-\item{depth}{Crawl depth - A value of 1 only crawls the seed pages, 2 crawls links found on seeds, etc..}
+\item{depth}{Crawl depth for this crawl - A value of 1 only crawls the seed pages, 2 crawls links found on seeds, etc..}
 
 \item{max_depth}{Where as the 'depth' variable determines the depth of the current crawl, 'max_depth' sets a maximum
 overall depth so that no link with depth higher than this value will be selected for crawling during the generate phase.}
@@ -78,17 +76,15 @@ overall depth so that no link with depth higher than this value will be selected
 
 \item{parser}{Parsing function to use.}
 
-\item{score_func}{Link Scoring Function.}
+\item{score_func}{URL Scoring Function.}
 
 \item{log_file}{Name of log file. If null, writes to stdout().}
 
-\item{seeds_only}{only seeds}
+\item{seeds_only}{If true, only seeds will be pulled from linkDB.}
 
 \item{readability_content}{process content using readability}
 
-\item{order_path}{order by path length ascending or descending}
-
-\item{overwrite}{If true, data for url will be overwritten in crawlDB.}
+\item{overwrite}{If true, data for url will be overwritten in linkDB.}
 
 \item{min_score}{minimum score during generate for urls}
 }
@@ -111,8 +107,7 @@ parrallel using the future package
 library(crawlR)
 
 work_dir <- '/usr/local/solr/crawl/'
-max_concurr = 150        # max concurrent connections - total
-max_concurr_invest = 100 # invest pages (10-k) are text heavy
+max_concurr = 50         # max concurrent connections - total
 max_host = 1             # max concurrent connections - per host
 crawl_delay = 30         # delay in seconds between sucessvie requests same host
 timeout = Inf            # total time for crawling ALL urls
