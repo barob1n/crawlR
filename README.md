@@ -18,11 +18,34 @@
 ## Usage
 
 ```r
-crawlR(seeds = NULL, work_dir = NULL, out_dir = NULL,
-  max_concurr = 2, max_host = 1, timeout = Inf, external_site = F,
-  sitemaps = F, crawl_delay = 10, max_size = 4e+06, regExIn = NULL,
-  regExOut = NULL, depth = 4, queue_scl = 1, topN = NULL,
-  max_urls_per_host = 10, n_threads = 1, parser = parseR)
+crawlR(
+    seeds = NULL,
+    work_dir=NULL,
+    out_dir = NULL,
+    max_concurr = 50,
+    max_host = 1,
+    timeout = Inf,
+    timeout_request=30,
+    external_site = F,
+    sitemaps = F,
+    crawl_delay=30,
+    max_size = 10e6,
+    regExIn = NULL,
+    regExOut = NULL,
+    depth = 1,
+    max_depth=3,
+    queue_scl = 1,
+    topN=NULL,
+    max_urls_per_host = 10,
+    n_threads=1,
+    parser = crawlR:::parse_content,
+    score_func=NULL,
+    log_file = NULL,
+    seeds_only = F,
+    crawl_int=NULL,
+    readability_content=F,
+    overwrite = F,
+    min_score=0.0)
 ```
 
 
@@ -36,6 +59,7 @@ Argument      |Description
 ```max_concurr```     |     Max. total concurrent connections open at any given time.
 ```max_host```     |     Max. total concurrent connections per host at any given time.
 ```timeout```     |     Total (as in all url's in seed list) time per each iteration (for each depth).
+```timeout_request```	| Per url timeout.
 ```external_site```     |     If true, crawler will follow external links.
 ```crawl_delay```     |     time (in seconds) for calls to the same host. Only applies if the  time is not specified by the host's robots.txt.
 ```max_size```     |     Max size of file or webpage to download and parse.
