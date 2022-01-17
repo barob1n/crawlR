@@ -72,7 +72,7 @@ Argument      |Description
 ```n_threads```     |   (depricated) Only applies to parsing.
 ```parser```     |     Parsing function to use.
 ```score_func```	|	URL Scoring Function.
-```log_file``` Name of log file. If null, writes to stdout().
+```log_file```	|	Name of log file. If null, writes to stdout().
 ```seeds_only```	|	If true, only seeds will be pulled from LinkDB.
 ```readability_content```	|	Process content using readability python module.
 ```overwrite```	|	If true, data for url will be overwritten in crawlDB.
