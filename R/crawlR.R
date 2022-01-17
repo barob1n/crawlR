@@ -25,7 +25,7 @@
 #' @param max_size Max size of file or webpage to download and parse.
 #' @param regExIn url's matching this regular expression will be used.
 #' @param regExOut  url's matching this reg-ex  will be filtered out, including url's that match regExIn.
-#' @param depth Crawl depth - A value of 1 only crawls the seed pages, 2 crawls links found on seeds, etc..
+#' @param depth Crawl depth for this crawl - A value of 1 only crawls the seed pages, 2 crawls links found on seeds, etc..
 #' @param max_depth Where as the 'depth' variable determines the depth of the current crawl, 'max_depth' sets a maximum
 #'    overall depth so that no link with depth higher than this value will be selected for crawling during the generate phase.
 #' @param queue_scl (deprecated) max_concur * queue_scl gives que.
@@ -33,9 +33,9 @@
 #' @param max_urls_per_host Maximum url's from each host when creating fetch list for each link depth.
 #' @param n_threads (depricated) Only applies to parsing.
 #' @param parser Parsing function to use.
-#' @param score_func Link Scoring Function.
+#' @param score_func URL Scoring Function.
 #' @param log_file Name of log file. If null, writes to stdout().
-#' @param seeds_only only seeds
+#' @param seeds_only If true, only seeds will be pulled from LinkDB.
 #' @param readability_content process content using readability
 #' @param overwrite If true, data for url will be overwritten in crawlDB.
 #' @param min_score minimum score during generate for urls
@@ -103,7 +103,6 @@ crawlR <- function(
     timeout = Inf,
     timeout_request=30,
     external_site = F,
-    sitemaps = F,
     crawl_delay=30,
     max_size = 10e6,
     regExIn = NULL,

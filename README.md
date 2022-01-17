@@ -27,7 +27,6 @@ crawlR(
     timeout = Inf,
     timeout_request=30,
     external_site = F,
-    sitemaps = F,
     crawl_delay=30,
     max_size = 10e6,
     regExIn = NULL,
@@ -58,19 +57,26 @@ Argument      |Description
 ```out_dir```     |     Directory to store results. If NULL defaults to work directory.
 ```max_concurr```     |     Max. total concurrent connections open at any given time.
 ```max_host```     |     Max. total concurrent connections per host at any given time.
-```timeout```     |     Total (as in all url's in seed list) time per each iteration (for each depth).
+```timeout```     |     Total (as in all url's in fetch list) time per each iteration (for each depth).
 ```timeout_request```	| Per url timeout.
 ```external_site```     |     If true, crawler will follow external links.
 ```crawl_delay```     |     time (in seconds) for calls to the same host. Only applies if the  time is not specified by the host's robots.txt.
 ```max_size```     |     Max size of file or webpage to download and parse.
 ```regExIn```     |     URL's matching this regular expression will be used.
 ```regExOut```     |     URL's matching this reg-ex  will be filtered out, including URL's that match regExIn.
-```depth```     |     Crawl depth - A value of 1 only crawls the seed pages, 2 crawls links found on seeds, etc..
+```depth```     |     Crawl depth for this crawl - A value of 1 only crawls the seed pages, 2 crawls links found on seeds, etc..
+```max_depth```     |     Where as the 'depth' variable determines the depth of the current crawl, 'max_depth' sets a maximum overall depth so that no link with depth higher than this value will be selected for crawling during the generate phase.
 ```queue_scl```     |     (Deprecated) max_concur * queue_scl gives que.
 ```topN```     |     Top num links to fetch per per link depth iteration.
 ```max_urls_per_host```     |     Maximum URL's from each host when creating fetch list for each link depth.
-```n_threads```     |     Only applies to parsing.
+```n_threads```     |   (depricated) Only applies to parsing.
 ```parser```     |     Parsing function to use.
+```score_func```	|	URL Scoring Function.
+```log_file``` Name of log file. If null, writes to stdout().
+```seeds_only```	|	If true, only seeds will be pulled from LinkDB.
+```readability_content```	|	Process content using readability python module.
+```overwrite```	|	If true, data for url will be overwritten in crawlDB.
+```min_score```	|	minimum score during generate for urls
 
 ## Details
 
