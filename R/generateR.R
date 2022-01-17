@@ -10,6 +10,7 @@
 #' @param topN Choose these top links.
 #' @param external_site Logical. If False, host outside the seed list will NOT be crawled.
 #' @param max_urls_per_host Max URL's to generate per host.
+#' @param crawl_delay crawl delay for requests to the same host
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @param seeds_only gen only seeds
 #' @param min_score minimum score for url
@@ -108,7 +109,9 @@ generateR <- function(out_dir=NULL,
                                min_score=0
 
                                ){
-      if(!ext_site) q <-paste(q,'inner join (select t3.server from linkDB  t3 where t3.is_seed=1) t2 on t1.server = t2.server')
+      if(!ext_site) q <-paste(
+        q,
+        'inner join (select t3.server from linkDB  t3 where t3.is_seed=1) t2 on t1.server = t2.server')
 
       q <-paste(q, 'where', next_crawl)
       q <-paste(q,  max_depth)
@@ -148,18 +151,10 @@ generateR <- function(out_dir=NULL,
 
 
     this_date<-as.numeric(Sys.Date())
-    # q <- paste("create temporary table fetch_list as ",q,
-    #            " order by depth asc, length(path)", order_path )
     q <- paste("create temporary table fetch_list as ",q,
                " order by score desc, depth asc" )
     st<-Sys.time()
     writeLines(paste('GenerateR: Begining generate query - ',st), con=log_con)
-
-    # this_date<-as.numeric(Sys.Date())
-    # q<-paste0(" update linkDB set crawled=0, next_crawl= ",this_date," where is_seed=0 ")
-    # DBI::dbExecute(crawlDB,q)
-    # q<-paste0(" delete from linkDB where depth > 1 ")
-    # DBI::dbExecute(crawlDB,q)
 
     # get the fetch list
     DBI::dbExecute(crawlDB,q)
@@ -186,16 +181,7 @@ generateR <- function(out_dir=NULL,
                            "where url in ( select t2.url from fetch_list t2)"))
     #########################
 
-
-    # DBI::dbWriteTable(crawlDB,'temp_fech',fetch_list,temporary=T)
-    # DBI::dbExecute(crawlDB,
-    #                paste("update linkDB set crawled = 0 where url in ( select t2.url from temp_fech t2)"))
-    # DBI::dbExecute(crawlDB, " drop table temp_fech")
-    # DBI::dbDisconnect(crawlDB)
-
     DBI::dbExecute(crawlDB, " drop table fetch_list")
-
-
 
     fetch_list <- create_fetch_list(fetch_list,crawl_delay)
     save(fetch_list,file=paste0(this_dir,'fetch_list.rda'))
@@ -212,8 +198,6 @@ generateR <- function(out_dir=NULL,
     DBI::dbDisconnect(crawlDB)
     if(class(log_con)[1]=="file")close(log_con)
 
-    #close(f_out)
-   #
 
   })
 

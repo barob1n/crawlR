@@ -35,7 +35,6 @@ injectR <- function(out_dir = NULL,
     seeds<-na.omit(unlist(lapply(unlist(seeds),function(x) normalize_url(x))))
     seeds<- ifelse(!grepl('^http',seeds), paste0('http://', seeds), seeds)
     seeds<-gsub('/$','',seeds)
-    #seeds<- ifelse(grepl('^www',seeds), paste0('http://', seeds), seeds)
     ip <- gsub('[0-9.]','',seeds)
     seeds <- seeds[ip!=""]
 
@@ -59,7 +58,7 @@ injectR <- function(out_dir = NULL,
 
 
     seeds<-seeds[!duplicated(seeds$url),]
-    #if(!is.null(linkDB)){
+
     if(NROW(DBI::dbListObjects(crawlDB))>0){
 
       q <- paste("
@@ -100,7 +99,6 @@ injectR <- function(out_dir = NULL,
   }, finally = {
     DBI::dbDisconnect(crawlDB)
     if(class(log_con)[1]=="file") close(log_con)
-    #if(return) return(list(hostDB=hostDB, linkDB=linkDB))
   })
 }
 

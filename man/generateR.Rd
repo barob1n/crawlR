@@ -36,6 +36,8 @@ generateR(
 
 \item{max_urls_per_host}{Max URL's to generate per host.}
 
+\item{crawl_delay}{crawl delay for requests to the same host}
+
 \item{log_file}{Name of log file. If null, writes to stdout().}
 
 \item{seeds_only}{gen only seeds}
