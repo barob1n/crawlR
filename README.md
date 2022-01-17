@@ -1,4 +1,4 @@
-# `crawlR`: CrawlR - Crawl, Parse, and Index
+# `crawlR`: Web Crawler for R
 
 ## Description
 
