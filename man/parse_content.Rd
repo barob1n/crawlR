@@ -4,10 +4,16 @@
 \alias{parse_content}
 \title{General Parser}
 \usage{
-parse_content(res)
+parse_content(res, readability, readability_content = F, map_meta = NULL)
 }
 \arguments{
 \item{res}{Return value from curl.}
+
+\item{readability}{not used}
+
+\item{readability_content}{not used}
+
+\item{map_meta}{not used}
 }
 \value{
 Returns character vector of links, or error message.

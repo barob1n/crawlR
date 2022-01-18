@@ -42,10 +42,6 @@
 #' @import curl
 #' @import xml2
 #' @importFrom magrittr  %>%
-#' @importFrom tokenizers tokenize_ngrams
-#' @importFrom SnowballC wordStem
-#' @importFrom text2vec itoken
-#' @importFrom text2vec create_dtm
 #'
 #' @export
 #'
@@ -54,42 +50,32 @@
 #'
 #' ## SETUP --------------------------------------------------------------------
 #'
+#' devtools::install_github('barob1n/crawlR)
+#'
 #' library(crawlR)
 #'
-#' work_dir <- '/usr/local/solr/crawl/'
-#' max_concurr = 50         # max concurrent connections - total
-#' max_host = 1             # max concurrent connections - per host
-#' crawl_delay = 30         # delay in seconds between sucessvie requests same host
-#' timeout = Inf            # total time for crawling ALL urls
+#' # Create Seed List
+#' seeds <- c("https://www.cnn.com", "https://www.npr.org")
 #'
+#' library(crawlR)
 #'
-#'   fh <- file(paste0(work_dir,'/seeds.txt'))
-#'
-#'   seeds <- readLines(fh)
-#'   close(fh)
-#'
-#'   ## Get initial pages
-#'   crawlR::crawlR(
-#'     seeds = seeds,
-#'     work_dir = work_dir,
-#'     out_dir =  out_dir,
-#'     max_concurr = max_concurr,
-#'     max_host = max_host,
-#'     timeout = timeout,
-#'     external_site = F,
-#'     crawl_delay=crawl_delay,
-#'     max_size = 4e6,
-#'     regExOut = NULL,
-#'     regExIn = NULL,
-#'     depth = 1,
-#'     queue_scl = 1,
-#'     topN=NULL,
-#'     max_urls_per_host = 1,
-#'     n_threads = 2,
-#'     parser = crawlR:::parse_content)
-#'
-#'   file.remove(paste0(work_dir,'/seeds.txt'))
-#'
+#' # Run Crawler.
+#' crawlR(seeds = seeds,
+#'        work_dir="~/crawl/",
+#'        out_dir = "~/crawl/news/",
+#'        max_concurr = 50,
+#'        max_host = 5,
+#'        timeout = Inf,
+#'        external_site = F,
+#'        crawl_delay=5,
+#'        max_size = 4e6,
+#'        regExOut = NULL,
+#'        regExIn = NULL,
+#'        depth = 1,
+#'        queue_scl = 1,
+#'        topN=10,
+#'        max_urls_per_host = 10,
+#'        parser = crawlR::parse_content)
 #'
 
 
@@ -131,47 +117,45 @@ crawlR <- function(
       if(!(dir.exists(work_dir))) dir.create(work_dir)
       if(!(dir.exists(out_dir))) dir.create(out_dir)
       if(!grepl('/$',out_dir)) out_dir<-paste0(out_dir,'/')
-      if(!grepl('/$',work_dir)) out_dir<-paste0(work_dir,'/')
+      if(!grepl('/$',work_dir)) work_dir<-paste0(work_dir,'/')
 
-      write_log(paste0('---------------------------------------------------------'), log_file)
-      write_log(paste0('---------------------------------------------------------'), log_file)
-      write_log(paste0('crawlR: ',Sys.time(),' - Entering Crawler'), log_file)
-      write_log(paste0('crawlR: Work Directory - ',work_dir), log_file)
-      write_log(paste0('crawlR: Out Directory - ',out_dir), log_file)
-      write_log(paste0('crawlR: Parameters:'), log_file)
+      ## get input parameters
       for(n in names(formals(crawlR))){
         v<-get(n)
         if(n=='seeds') v<-NROW(v)
         if(class(v)=='function') v<-paste(n,'<- function()') ## use name if function
         write_log(paste0('    -',n,paste(rep(' ',30-nchar(n)),collapse=""),v), log_file)
       }
+
+      ## log status and parameters
+      write_log(paste0('---------------------------------------------------------'), log_file)
+      write_log(paste0('---------------------------------------------------------'), log_file)
+      write_log(paste0('crawlR: ',Sys.time(),' - Entering Crawler'), log_file)
+      write_log(paste0('crawlR: Work Directory - ',work_dir), log_file)
+      write_log(paste0('crawlR: Out Directory - ',out_dir), log_file)
+      write_log(paste0('crawlR: Parameters:'), log_file)
       write_log(paste0('---------------------------------------------------------'), log_file)
       write_log(paste0('---------------------------------------------------------'), log_file)
 
       dir_check <- c(list.files(work_dir),"")
       if(is.null(seeds) & !file.exists(paste0(work_dir,'crawlDB.sqlite'))) stop('Seed list not provided.')
 
-      ## Inject Seed list.
+      ## Inject Seed list if provided
       if(!is.null(seeds)){
-
         write_log(paste('crawlR: Injecting',length(seeds), 'seed URLs -', Sys.time()), log_file)
-
-        val<-injectR(out_dir=out_dir,
-                     work_dir=work_dir,
-                     seeds=seeds,
-                     log_file = log_file)
-
+        val<-injectR(out_dir=out_dir,work_dir=work_dir,seeds=seeds,log_file = log_file)
         if(class(val)=='error') stop(paste(val))
       }
 
+      ## array of start and end times for depth levels
       st_arr<-rep(NA,depth)
       et_arr<-rep(NA,depth)
       for(lvl in 1:depth){
 
+        ## start time
         st_arr[lvl]<-as.numeric(Sys.time())
 
         write_log(paste('crawlR:  Depth - ',lvl,'of', depth), log_file)
-
         write_log(paste('crawlR: Generating Fetch List -', Sys.time()), log_file)
 
         val<-generateR(out_dir=out_dir,
@@ -181,6 +165,7 @@ crawlR <- function(
                        max_depth=max_depth,
                        topN = topN,
                        external_site=external_site,
+                       max_host=max_host,
                        max_urls_per_host = max_urls_per_host,
                        crawl_delay=crawl_delay,
                        log_file = log_file,
@@ -190,6 +175,7 @@ crawlR <- function(
         if(class(val)=='error') stop(paste(val))
 
         write_log(paste('crawlR: Finished Fetch List -', Sys.time()), log_file)
+
         this_dir<-paste0(find_last_dir(out_dir=gsub('/$','',out_dir)),"/")
 
         if(!file.exists(paste0(this_dir,'fetch_list.rda'))){
@@ -228,7 +214,6 @@ crawlR <- function(
 
         val<-updateR(work_dir=work_dir,
                      out_dir=this_dir,
-                     crawl_delay=crawl_delay,
                      log_file = log_file,
                      overwrite = overwrite,
                      score_func=score_func)
@@ -237,18 +222,23 @@ crawlR <- function(
 
         write_log(paste('crawlR: Finished Updating -', Sys.time()), log_file)
         write_log(paste('crawlR: End of Depth Level:',lvl,'-', Sys.time()), log_file)
+
+        ## end time
         et_arr[lvl] <- as.numeric(Sys.time())
         write_log(paste('crawlR: Time for depth -',(et_arr[lvl]-st_arr[lvl]) ), log_file)
-
       }
+
+      ## log status
       write_log(paste('crawlR: DONE -', Sys.time()), log_file)
       write_log(paste('crawlR: Average Time per Depth -',mean(et_arr-st_arr) ), log_file)
       write_log(paste0('---------------------------------------------------------'), log_file)
       write_log(paste0('---------------------------------------------------------'), log_file)
-    }, error = function(e){
+    },
+    error = function(e){
       write_log(paste('crawlR: ',e), log_file)
       stop(paste(val))
-    }, finally = {
+    },
+    finally = {
     })
 
 }

@@ -12,6 +12,7 @@ generateR(
   max_depth = NULL,
   topN = NULL,
   external_site = F,
+  max_host = NULL,
   max_urls_per_host = 10,
   crawl_delay = NULL,
   log_file = NULL,

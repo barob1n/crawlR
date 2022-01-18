@@ -24,6 +24,7 @@ generateR <- function(out_dir=NULL,
                       max_depth =NULL,
                       topN = NULL,
                       external_site=F,
+                      max_host=NULL,
                       max_urls_per_host=10,
                       crawl_delay=NULL,
                       log_file=NULL,
@@ -94,9 +95,7 @@ generateR <- function(out_dir=NULL,
       paste(" limit ",max_urls_per_host )
     }
 
-
-
-    ## get query
+    ## build query
     generate_query <- function(q="select * from linkDB ",
                                next_crawl=NULL,
                                max_depth=NULL,
@@ -107,30 +106,43 @@ generateR <- function(out_dir=NULL,
                                limit=NULL,
                                ext_site=external_site,
                                min_score=0
-
                                ){
-      if(!ext_site) q <-paste(
-        q,
-        'inner join (select t3.server from linkDB  t3 where t3.is_seed=1) t2 on t1.server = t2.server')
 
+      ## if external sites not allowed
+      if(!ext_site){
+        q <-paste(q,'inner join (select t3.server from linkDB  t3 where t3.is_seed=1) t2 on t1.server = t2.server')
+      }
+
+      ## handle next crawl
       q <-paste(q, 'where', next_crawl)
+
+      ## handle max depth
       q <-paste(q,  max_depth)
 
-      if(!is.null(fin) & !is.null(fout)) q <- paste(q,'and ( ', fin, 'and', fout,' and t1.score >= ', min_score, ' or t1.depth = 0 )')
-      else if(!is.null(fin))  q <- paste(q,'and (', fin, ' and t1.score >= ', min_score, ' or t1.depth = 0 )')
-      else if(!is.null(fout)) q <- paste(q,'and (', fout,' and t1.score >= ', min_score, ' or t1.depth = 0 )')
+      ## handle filter in and filter out
+      if(!is.null(fin) & !is.null(fout)){
+        q <- paste(q,'and ( ', fin, 'and', fout,' and t1.score >= ', min_score, ' or t1.depth = 0 )')
+      }else if(!is.null(fin)){
+        q <- paste(q,'and (', fin, ' and t1.score >= ', min_score, ' or t1.depth = 0 )')
+      }else if(!is.null(fout)){
+        q <- paste(q,'and (', fout,' and t1.score >= ', min_score, ' or t1.depth = 0 )')
+      }
 
-      if(seeds_only)          q <- paste(q,'and t1.is_seed=1')
-      if(!is.null(limit))     q <- paste(q, ' ', limit)
+      ## handle seeds only crawl
+      if(seeds_only){
+        q <- paste(q,'and t1.is_seed=1')
+      }
 
-
+      ## if limit is given
+      if(!is.null(limit)){
+        q <- paste(q, ' ', limit)
+      }
       return(q)
     }
 
 
     # filter both th inner sub query and outer query to speed it up
-    # order by score desc to get best scoring, then by depth asc
-    # to get newest.
+    # order by score desc to get best scoring, then by depth asc to get newest.
     q <-generate_query(
       q = paste("select
                 ROW_NUMBER () OVER (
@@ -148,53 +160,63 @@ generateR <- function(out_dir=NULL,
       ext_site=external_site,
       min_score=min_score)
 
-
-
+    ## add create temp table sql
     this_date<-as.numeric(Sys.Date())
     q <- paste("create temporary table fetch_list as ",q,
                " order by score desc, depth asc" )
+
     st<-Sys.time()
     writeLines(paste('GenerateR: Begining generate query - ',st), con=log_con)
 
-    # get the fetch list
+    # run query to create fetch list
     DBI::dbExecute(crawlDB,q)
 
+    ## filter number of urls by host using max_urls_per_host
     DBI::dbExecute(crawlDB,paste0("delete from fetch_list where Rownum > ",max_urls_per_host))
+
+    ## filter number of urls by topN
     DBI::dbExecute(crawlDB,paste0(
       "delete from fetch_list where url not in (
          select url from fetch_list ",get_limit(topN), " )")) # order by is_seed desc, RANDOM()
+
+    ## query the final fetch list
     fetch_list<- DBI::dbGetQuery(crawlDB, paste0('select * from fetch_list'))
     fetch_list$RowNum <- NULL
 
-    # writeLines(paste(fetch_list$is_seed), con=log_con)
-
     et <- Sys.time()
+
+    ## write log info
     writeLines(paste('GenerateR: Finished generate query - ',et), con=log_con)
     writeLines(paste('GenerateR: Found',NROW(fetch_list), 'urls.'), con=log_con)
     writeLines(paste('GenerateR: Query time - ',round(as.numeric(et)-as.numeric(st)),'seconds.'), con=log_con)
 
     next_crawl <- as.numeric(Sys.Date() + 10)
+
+    ## update the crawled status for the selected urls
     DBI::dbExecute(crawlDB,
                      paste("update linkDB set crawled = 1",
                            ",next_crawl = ", as.numeric(Sys.Date()),
                            ",last_crawl = ", as.numeric(Sys.Date()),
                            "where url in ( select t2.url from fetch_list t2)"))
-    #########################
 
+    ## drop temp table fetch_list
     DBI::dbExecute(crawlDB, " drop table fetch_list")
 
+    ## prep and save fetch list for output
     fetch_list <- create_fetch_list(fetch_list,crawl_delay)
     save(fetch_list,file=paste0(this_dir,'fetch_list.rda'))
     f_out<-gzfile(paste0(this_dir,'fetch_list.csv.gz'))
     write.csv(fetch_list, file=f_out)
 
-  }, error = function(e){
+  },
+  error = function(e){
     writeLines(paste('GenerateR: ',e), con=log_con)
     paste('GenerateR: ',e)
     class(e) <- 'error'
     e
 
-  }, finally = {
+  },
+  finally = {
     DBI::dbDisconnect(crawlDB)
     if(class(log_con)[1]=="file")close(log_con)
 

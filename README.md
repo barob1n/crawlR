@@ -111,10 +111,9 @@ Argument      |Description
  regExIn = NULL,
  depth = 2,
  queue_scl = 1,
- topN=20000,
+ topN=10000,
  max_urls_per_host = 10,
- n_threads=1,
- parser = parseR)
+ parser = crawler::parse_content)
  
  
 ## Run again with URL filters.
@@ -136,10 +135,9 @@ filter_out=paste0("sports,weather")
  regExIn = filter_out,
  depth = 2,
  queue_scl = 1,
- topN=20000,
+ topN=10000,
  max_urls_per_host = 10,
- n_threads=1,
- parser = parseR)
+ parser = crawler::parse_content)
  
  
  # Run a third time, providing some new/additional seeds.
@@ -160,10 +158,9 @@ filter_out=paste0("sports,weather")
  regExIn = NULL,
  depth = 2,
  queue_scl = 1,
- topN=20000,
+ topN=10000,
  max_urls_per_host = 10,
- n_threads=1,
- parser = parseR)
+ parser = crawler::parse_content)
  
  
  

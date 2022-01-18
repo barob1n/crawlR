@@ -6,10 +6,7 @@
 \usage{
 score_urls(
   paths = NULL,
-  terms = c("about", "news", "press", "portfolio", "products", "announce", "construct",
-    "plant", "coal", "nuclear", "wind", "refinery", "pipelines", "oil", "gas", "energy",
-    "manufacturing", "chemical", "processing", "mining", "ore", "drilling", "project",
-    "addition", "expansion", "grassroot", "greenfield"),
+  terms = c(),
   scores = c(rep(1, 6), rep(1, 16), rep(1, 5))
 )
 }

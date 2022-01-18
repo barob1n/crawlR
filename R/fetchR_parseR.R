@@ -53,9 +53,14 @@ fetchR_parseR<- function(
     # Fetched page data stored here.
     fetched_pg    <- new.env();
 
-    json_out <- gzfile(paste0(out_dir,'fetched.json'),open="a")
+    json_out <- gzfile(paste0(out_dir,'fetched.json.gz'),open="a")
 
-    readability <- import("readability") # pip install readability-lxml
+    if(readability_content){
+      readability <- import("readability") # pip install readability-lxml
+    }else{
+      readability<-NULL
+    }
+
 
     if(!return & !save_to_disk){stop('return==F and save_to_disk==F - this will not return or save any data.')}
     if(is.null(out_dir) & save_to_disk){stop('save_to_disk==TRUE, but no output directory provided.')}
@@ -132,6 +137,7 @@ fetchR_parseR<- function(
         dt <- as.numeric(Sys.time()) - as.numeric(queue$init_time)
         if(queue$delay[1] > dt){
           writeLines(paste('fetchR: Waiting for Batch: ', queue$batch,'- URLs Pending: ', pending ), con = log_con)
+
           Sys.sleep(queue$delay[1]  - dt)
         }
       }
@@ -158,7 +164,6 @@ fetchR_parseR<- function(
         print_time <<- Sys.time()
         new_batch <- F
       }
-      ##gc()
     }
 
     ave_rate=3
@@ -172,7 +177,6 @@ fetchR_parseR<- function(
       curl::handle_setheaders(h,"CURLOPT_DNS_CACHE_TIMEOUT" = paste(3600))
       curl::handle_setheaders(h,"User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36")
       curl::handle_setopt(h, .list=list(timeout=round(timeout_request)))
-      #curl::handle_setopt(h, .list=list(timeout=120))
       curl::curl_fetch_multi(url, handle = h, pool = pool, done = function(res){
         if(res$status >=200 & res$status<300){
           if(save_to_disk){
@@ -189,8 +193,8 @@ fetchR_parseR<- function(
                 res$content<-rawToChar(res$content)
                 if(res$url!="") fetched_pg[[res$url]] <-res
               }else if(type[2]=='pdf'){
-                #fname <- paste0(out_dir, res$hash_name, ".pdf", collapse = "")
-               # fh <- file(fname, open = "wb")
+                # fname <- paste0(out_dir, res$hash_name, ".pdf", collapse = "")
+                # fh <- file(fname, open = "wb")
                 # writeBin((res$content), con = fh)
                 # close(fh)
                 # res$content<-fname
@@ -213,13 +217,13 @@ fetchR_parseR<- function(
     # The pool of links
     pool  <- curl::new_pool(total_con = max_concurr, host_con = max_host)
 
-    #listenv::lisenv()
 
     # list of links to be fetched - created by inject/generate
-
     if(!grepl('/$',out_dir)) out_dir<-paste0(out_dir,'/')
-    #print(paste0(out_dir,'fetched.json'))
     if(is.null(fetch_list)) load(paste0(out_dir,'fetch_list.rda'))
+
+    # use max_host to group in batches if max_host >1
+    fetch_list$batch<-floor(fetch_list$batch/(max_host+0.1))+1
 
     fetch_list_env$df <- fetch_list
     rm(fetch_list);
@@ -228,13 +232,6 @@ fetchR_parseR<- function(
     queue <- new.env()
     queue$batch_count <- max(fetch_list_env$df$batch)
     queue$init_time <- Sys.time()
-
-    ## output to single file append
-
-    #file.create(paste0(out_dir,'/fetched.json.gz'))
-    #json_out <- gzfile(paste0(out_dir,'/fetched.json.gz'),open="a")
-
-
 
 
     ## URL's loaded into queue.

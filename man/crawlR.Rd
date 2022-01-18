@@ -113,32 +113,27 @@ crawl_delay = 30         # delay in seconds between sucessvie requests same host
 timeout = Inf            # total time for crawling ALL urls
 
 
-  fh <- file(paste0(work_dir,'/seeds.txt'))
-
-  seeds <- readLines(fh)
-  close(fh)
-
-  ## Get initial pages
-  crawlR::crawlR(
-    seeds = seeds,
-    work_dir = work_dir,
-    out_dir =  out_dir,
-    max_concurr = max_concurr,
-    max_host = max_host,
-    timeout = timeout,
-    external_site = F,
-    crawl_delay=crawl_delay,
-    max_size = 4e6,
-    regExOut = NULL,
-    regExIn = NULL,
-    depth = 1,
-    queue_scl = 1,
-    topN=NULL,
-    max_urls_per_host = 1,
-    n_threads = 2,
-    parser = crawlR:::parse_content)
-
-  file.remove(paste0(work_dir,'/seeds.txt'))
+# Create Seed List
+seeds <- c("https://www.cnn.com", "https://www.npr.org")
 
 
+# Crawl all seeds on 1st iteration, but only follow links
+library(crawlR)
+# Run Crawler.
+crawlR(seeds = seeds,
+       work_dir="E:/crawl/",
+       out_dir = "E:/crawl/news/",
+       max_concurr = 50,
+       max_host = 5,
+       timeout = Inf,
+       external_site = F,
+       crawl_delay=5,
+       max_size = 4e6,
+       regExOut = NULL,
+       regExIn = NULL,
+       depth = 1,
+       queue_scl = 1,
+       topN=10,
+       max_urls_per_host = 10,
+       parser = crawlR::parse_content)
 }

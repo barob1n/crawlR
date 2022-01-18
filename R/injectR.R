@@ -15,50 +15,40 @@ injectR <- function(out_dir = NULL,
                     log_file = NULL
                     ){
 
-  tryCatch({
+  log_con<-set_log_file(log_file)
 
-    log_con<-set_log_file(log_file)
+  tryCatch({
 
     if(is.null(out_dir))     stop('Output directory not provided.')
     if(is.null(work_dir))    stop('Work directory not provided.')
     if(!dir.exists(work_dir))stop('Work directory does not exist.')
     if(is.null(seeds))       stop('A seed list must be provided.')
 
+    ## connect to crawlDB
     crawlDB <- DBI::dbConnect(RSQLite::SQLite(), paste0(work_dir,"crawlDB.sqlite"))
-    if(NROW(DBI::dbListObjects(crawlDB))>0){
-      linkDB <- dplyr::tbl(crawlDB, "linkDB")
-    }else{
-      linkDB <- NULL
-    }
 
-    ## Create a linkDB from list of seeds
-    seeds<-na.omit(unlist(lapply(unlist(seeds),function(x) normalize_url(x))))
-    seeds<- ifelse(!grepl('^http',seeds), paste0('http://', seeds), seeds)
-    seeds<-gsub('/$','',seeds)
+    ## clean up seeds
+    seeds<-normalize_url(seeds)
     ip <- gsub('[0-9.]','',seeds)
     seeds <- seeds[ip!=""]
-
-    seeds<-xml2::url_parse(unlist(seeds)) %>%
-      mutate(url= paste0(scheme,"://",server,path,'?',query)) %>%
-      mutate(url=gsub('\\?$|/$','',url)) %>%
-      mutate(crawled=0,
-             next_crawl=as.numeric(Sys.Date()),
-             is_seed=1,
-             depth=0,
-             crawl_int=1,
-             last_crawl=as.numeric(Sys.Date())) %>%
-      filter(!(scheme == "" | server == "")) %>%
-      filter(!duplicated(url))
-
+    seeds<-xml2::url_parse(unlist(seeds))
+    seeds<-seeds[seeds$scheme != '' | seeds$server!= '',]
+    seeds$url<-paste0(seeds$scheme,'://',seeds$server,seeds$path,'?',seeds$query)
+    seeds$crawled<-0
+    seeds$next_crawl<-as.numeric(Sys.Date())
+    seeds$is_seed<-1
+    seeds$depth<-0
+    seeds$crawl_int<-1
+    seeds$last_crawl<-as.numeric(Sys.Date())
     seeds$score<-0
-
-    col_order <- c('scheme','server','port','user','path','query',
-                   'fragment','crawled','next_crawl','url',
-                   'is_seed','depth','crawl_int','last_crawl','score')
-
-
     seeds<-seeds[!duplicated(seeds$url),]
 
+    col_order <- c(
+      'scheme','server','port','user','path','query',
+      'fragment','crawled','next_crawl','url',
+      'is_seed','depth','crawl_int','last_crawl','score')
+
+    ## Create a linkDB from list of seeds
     if(NROW(DBI::dbListObjects(crawlDB))>0){
 
       q <- paste("
@@ -90,13 +80,15 @@ injectR <- function(out_dir = NULL,
       DBI::dbExecute(crawlDB,'CREATE UNIQUE INDEX url ON linkDB(url)')
     }
 
-  }, error = function(e){
+  },
+  error = function(e){
     e<-paste('injectR:',e)
     writeLines(e, con=log_con)
     class(e) <- 'error'
     e
 
-  }, finally = {
+  },
+  finally = {
     DBI::dbDisconnect(crawlDB)
     if(class(log_con)[1]=="file") close(log_con)
   })

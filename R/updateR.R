@@ -17,13 +17,13 @@ updateR <- function(work_dir = NULL,
                     overwrite = F,
                     score_func=NULL
                     ){
-  
+
+  log_con<-crawlR:::set_log_file(log_file)
+
   ## enviroment to hold models used by scoring function
-  score_func_env<-env()
+  score_func_env<-new.env()
 
   tryCatch({
-
-    log_con<-crawlR:::set_log_file(log_file)
 
     ## JSON file with extracted links
     links<-paste0(out_dir,"fetched_links.json.gz")
@@ -33,13 +33,8 @@ updateR <- function(work_dir = NULL,
     if(!dir.exists(work_dir)) stop('Work directory does not exist.')
     if(!file.exists(links)){stop("can't find previous runs fetched_links file.")}
 
-    ## to keep columns in correct order when writing to DB
-    col_order <- c('scheme', 'server', 'port', 'user', 'path', 'query',
-                   'fragment','crawled', 'next_crawl', 'url', 'is_seed',
-                   'depth','crawl_int', 'last_crawl','score')
-
     ## file handler for links
-    fh_links<-gzfile(links,open='r')
+    fh_links<-suppressWarnings(gzfile(links,open='rb'))
 
     load(paste0(out_dir,"fetch_list.rda"))
 
@@ -50,31 +45,36 @@ updateR <- function(work_dir = NULL,
     fetched_links<-NULL
 
     cnt<-0
+    ## read until end
     while(TRUE){
       cnt<-cnt+1
       try(silent=T, {
-        ## read until end
-        fetched_links<-readLines(con=fh_links,n=100)
+
+        ## grab links output from parse phase
+        fetched_links<-suppressWarnings(readLines(con=fh_links,n=100))
+
+        ## break at end
         if(NROW(fetched_links)==0) break;
 
+        ## cnt used for printing after certain number
         cnt<-1
+
+
+        ## parse links from json
         fetched_links<- lapply(fetched_links,function(x){
-          print(cnt)
           cnt<<-cnt+1
-          chk<-try(silent=T, {
-            if(NROW(x)==0) {
-              return(NULL)
-            }else{
-              jsonlite::fromJSON(x)
-            }
-          })
-          if(class(chk)=='try-error') return(NULL)
-          return(chk)
+          x<-try({jsonlite::fromJSON(x)},silent=T)
+          if(class(x)=='try-error'){
+            return(NULL)
+          }else{
+            return(x)
+          }
         })
 
+        ## clean up links
         fetched_links<-do.call(dplyr::bind_rows ,fetched_links)
         if(is.null(fetched_links$port)) fetched_links$port<-""
-        fetched_links$url<-gsub('/$','',fetched_links$url)
+        fetched_links$url<-normalize_url(fetched_links$url)
         fetched_links<-fetched_links[!fetched_links$url %in% fetch_list$url,]
         fetched_links$crawled <- 0
         fetched_links$next_crawl <- as.numeric(Sys.Date())
@@ -85,6 +85,7 @@ updateR <- function(work_dir = NULL,
           fetched_links$score <- 0
           writeLines(paste("UpdateR: No Scoring function.  "), con=log_con)
         }else{
+          ## scored in batches in-case large model used to score
           n_rows<-NROW(fetched_links)
           n<-20000
           idx<-ceiling(n_rows/n)
@@ -102,17 +103,26 @@ updateR <- function(work_dir = NULL,
         }
 
         ## Must be in correct order before inserting into linkDB
+        col_order <- c(
+          'scheme', 'server', 'port', 'user', 'path', 'query',
+          'fragment','crawled', 'next_crawl', 'url', 'is_seed',
+          'depth','crawl_int', 'last_crawl','score')
+
         fetched_links <- fetched_links[,col_order]
 
+        ## remove duplicates
         dup <- duplicated(fetched_links$url)
-        DBI::dbWriteTable(crawlDB,'fetched_links', fetched_links[!dup,], overwrite=F, temporary=T, append=T)
-        #print('wrote table')
+        DBI::dbWriteTable(
+          crawlDB,
+          'fetched_links',
+          fetched_links[!dup,],
+          overwrite=F, temporary=T, append=T)
+
       })
     }
 
     ## unload files used by score func
     rm(list=ls(score_func_env),envir=score_func_env)
-
 
     if(overwrite){q<-" insert or replace into linkDB "}else{ q<-" insert or ignore into linkDB  "}
     q <- paste(q,"
@@ -135,16 +145,17 @@ updateR <- function(work_dir = NULL,
       from fetched_links")
     DBI::dbExecute(crawlDB,q)
 
-  }, error = function(e){
+  },
+  error = function(e){
     e<-paste('updateR:',e)
     writeLines(e, con=log_con)
     class(e) <- 'error'
     e
-  }, finally ={
+  },
+  finally ={
     rm(fetched_links)
     DBI::dbDisconnect(crawlDB)
     if(class(log_con)[1]=="file")close(log_con)
-    #if(return) return(list(hostDB=hostDB, linkDB=linkDB))
   })
 
 

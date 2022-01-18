@@ -24,16 +24,13 @@ set_log_file <- function(log_file){
 #' @export
 #'
 score_urls <- function(paths=NULL,
-                       terms=c( 'about','news','press','portfolio','products','announce',
-                                'construct','plant','coal','nuclear','wind','refinery',
-                                'pipelines','oil','gas','energy','manufacturing',
-                                'chemical','processing','mining','ore','drilling',
-                                'project','addition','expansion','grassroot','greenfield'),
+                       terms=c(),
                        scores=c(rep(1,  6),
                                 rep(1, 16),
                                 rep(1,  5))){
 
   if(is.null(paths)) return(0)
+  if(NROW(terms)==0) return(0)
   these_matches<-lapply(paths,function(this_path){
     these_terms<-unlist(lapply(terms,function(this_term){
       grepl(this_term, this_path,ignore.case=T)
@@ -70,14 +67,12 @@ write_log <- function(message, log_file){
 #'
 get_links <- function(res){
   tryCatch({
-    #stopifnot(isTRUE(grepl("text/html", res$type)))
     doc <- xml2::read_html(res$content)
     nodes <- xml2::xml_find_all(doc, "//a[@href]")
     links <- xml2::xml_attr(nodes, "href")
     links <- xml2:::url_absolute(links, res$url)
     links <- grep("^https://|^http://", links, value = TRUE)
     links <- sub("#.*", "", links)
-    #links <- sub("index.html$", "", links)
     links
   }, error = function(e){
     return()
@@ -97,7 +92,6 @@ get_links <- function(res){
 #'
 parseExt <- function(type, extLookUp){
   ext <- extLookUp$file_extension[match(type, extLookUp$type)]
-  #ext <- rtika:::tika_mimetype$file_extension[match(type, rtika:::tika_mimetype$type)]
   if(length(ext)>0){
     thisType <- ext
   }else{
@@ -147,7 +141,7 @@ writeR <- function(out_dir=NULL,res=NULL,compress=T,extLookUp=NULL){
   if(type2 == 'text' & compress){
     fname <-paste0(out_dir,res$hash_name,".html", collapse='')
     fname <- paste0(fname,".gz")
-    fh <- gzfile(fname, "wb")
+    fh <- suppressWarnings(gzfile(fname, "wb"))
   }else if(type2 == 'text'){
     fname <-paste0(out_dir,res$hash_name,".html", collapse='')
     fh <- file(fname, "wb")
@@ -163,65 +157,6 @@ writeR <- function(out_dir=NULL,res=NULL,compress=T,extLookUp=NULL){
   return(NA)
 }
 
-# #' Returns New URL
-#  #'
-#  #' Internal use by crawlR package.
-#  #'
-#  #' @param new_root Root to draw next url from.
-#  #' @return Returns filename of output.
-#  #'
-#  get_url_from_root1 <- function(new_root,links,wait_table){
-#    #this_link <- links$url[[new_root]][1]
-#    this_link <- links[[new_root]][1]
-#    #links$url[[new_root]] <- links$url[[new_root]][-1]
-#  
-#    if(NROW(links[[new_root]])<=1){
-#      idx <- which(wait_table$url %in% new_root)
-#      wait_table$url<-wait_table$url[-idx]
-#      wait_table$dt<-wait_table$dt[-idx]
-#      wait_table$queue<-wait_table$queue[-idx]
-#      #links$url[[new_root]] <- NULL
-#      #rm(links[[new_root]])
-#      rm(list=new_root, envir=links)
-#    }else{
-#      links[[new_root]] <- links[[new_root]][-1]
-#    }
-#  
-#  
-#    return(this_link)
-#  }
-
-#  #' Returns the Root of a Url
-#  #'
-#  #' Internal use by crawlR package.
-#  #'
-#  #' @param urls List of urls.
-#  #' @return Returns filename of output.
-#  #'
-#  get_root_from_url <- function(urls){
-#    return(xml2::url_parse(urls))
-#  }
-#
-# library(robotstxt)
-# paths_allowed("http://google.com/")
-#
-# robotstxt::parse_robotstxt()
-# rtxt <- robotstxt(domain="wikipedia.org")
-
- 
-#  #' Filter Out Url's
-#  #'
-#  #' Filter out URL's
-#  #'
-#  #' @param links Links to be filtered.
-#  #' @param urlRegExFilterOut RegEX to filter with.
-#  #' @return filtered list of links
-#  #' @export
-#  #'
-#  do_filt_out <- function(url,regExOut){
-#    if(is.null(regExOut)) return((rep(T,length(url))))
-#    return(!grepl(regExOut,url,ignore.case = T))
-# }
 
 #' Normalize Url's
 #'
@@ -232,23 +167,13 @@ writeR <- function(out_dir=NULL,res=NULL,compress=T,extLookUp=NULL){
 #' @export
 #'
 normalize_url <- function(url){
-  tmp<-try({
 
-    url <- tolower(url)
-    # omits http://
-    if(grepl('^www.',url)) url <- paste0('http://',url)
-    # missing http & http...
-    if(!grepl('^http://|^https://',url)){
-      url<- paste0('http://',url)
-    }
-    url <- gsub("/$","",url)
-    # anything after #
-    url <- gsub('#.*','',url)
-  },silent=T)
-  if(class(tmp)=='try-error'){
-    return(NA)
-  }
-  return(tmp)
+  url <- tolower(url)
+  url <- gsub("/$","",url)
+  url <- gsub('#.*','',url)
+  url <- ifelse(!grepl('^https?:',url),paste0('http://',url),url)
+  url<-na.omit(url)
+  return(url)
 
 }
 
@@ -268,19 +193,10 @@ create_fetch_list <- function(fetch_list,crawl_delay=30){
     x$crawl_delay<-crawl_delay
     x#[,c('server','url','batch','crawl_delay','depth','crawl_int')]
     })
-  #cnt <- unlist(lapply(fetch_list, function(x) length(x)))
-
 
 
   fetch_list<-do.call(rbind,fetch_list)
   if(NROW(fetch_list)==0) return(NULL)
-
-  # fetch_list<-data.table::data.table(server = rep(names(fetch_list), cnt),
-  #                                    url = unlist(fetch_list),
-  #                                    batch=unlist(lapply(cnt, function(x) seq(x))),
-  #                                    crawl_delay=crawl_delay,
-  #                                    depth=fetch_list$depth,
-  #                                    stringsAsFactors = F)
 
   fetch_list$tot_delay<-fetch_list$batch*fetch_list$crawl_delay
   fetch_list <- fetch_list[order(fetch_list$tot_delay),]
@@ -288,50 +204,6 @@ create_fetch_list <- function(fetch_list,crawl_delay=30){
   return(fetch_list)
 }
 
-
-#	#' Processes Fetched Link List
-#	#'
-#	#'
-#	#' @param fetched_links Links from fetch phase.
-#	#' @return fetchable list
-#	#' @export
-#	#'
-#	process_fetched_links <- function(fetched_links,fetch_list){
-#	  if(NROW(fetched_links)==0) return(NULL)
-#	  origin_url<-normalize_url(names(fetched_links))
-#	  fetched_links<-lapply(origin_url,function(x){
-#		urls<-na.omit(normalize_url(fetched_links[[x]]))
-#		if(NROW(urls)==0)return()
-#		urls <- xml2::url_parse(unlist(urls))
-#
-#		urls$url <- paste0(urls$scheme,"://",urls$server,urls$path)
-#		urls$url <- ifelse(urls$query !="", paste0(urls$url,'?',urls$query),urls$url)
-#		if(urls$query !="") urls$url<-paste0(urls$url,'?',urls$query)
-#		urls$url <- gsub('\\?$|/$','',urls$url)
-#		urls$crawled<-0
-#		urls$depth<-0
-#		urls$crawl_int <- fetch_list$crawl_delay[match(urls$server, fetch_list$server)]
-#		urls$crawl_int[is.na(urls$crawl_int)]<-sample(30:60,sum(is.na(urls$crawl_int)),replace=T)
-#		if(x %in% fetch_list$url){
-#		  urls$depth<-fetch_list$depth[fetch_list$url==x]+1
-#		}
-#		urls
-#	  })
-#
-#	  fetched_links<-do.call(rbind,fetched_links)
-#	  # fetched_links <- na.omit(unlist(lapply(unlist(fetched_links),function(x) normalize_url(x))))
-#	  #
-#	  # fetched_links <- na.omit(unlist(lapply(unlist(fetched_links),function(x) normalize_url(x))))
-#	  # #cnt <- unlist(lapply(fetched_links, function(x) length(x)))
-#	  # if(NROW(fetched_links)==0) return(NULL)
-#	  # fetched_links <- xml2::url_parse(unlist(fetched_links))
-#	  #
-#	  # fetched_links$url <- paste0(fetched_links$scheme,"://",fetched_links$server,fetched_links$path,'?',fetched_links$query)
-#	  # fetched_links$url <- gsub('\\?$|/$','',fetched_links$url)
-#	  fetched_links <- fetched_links[!duplicated(paste(fetched_links$server, fetched_links$path)), ]
-#	  fetched_links <- fetched_links[grepl('http|https',paste(fetched_links$scheme)) & fetched_links$server != "",]
-#	  return(fetched_links)
-# }
 
 
 #' Queue a Batch of URL's
@@ -399,10 +271,7 @@ these_meta <- c('content-language','description','keywords','twitter:card',
 grep_meta<-'content-language|description|keywords|twitter:card|twitter:title|twitter:site|twitter:site:id|twitter:description|og:locale|og:type|og:title|og:url|og:name|og:description'
 
   tryCatch({
-#
-#     p <- profvis({
-#       for(jj in 1:100){
-#        print(jj)
+
     doc <- xml2::read_html(res$content)
     vals <- list()
     vals[['meta']]<-list()
@@ -413,7 +282,6 @@ grep_meta<-'content-language|description|keywords|twitter:card|twitter:title|twi
     meta_doc<- doc %>% rvest::html_nodes('meta')
     meta_content<-rvest::html_attr(meta_doc, "content")
     meta_name<-rvest::html_attr(meta_doc, "name")
-
 
     ## looking for any dates
     #idx<-stringr::str_detect(meta_prop, 'date') & !is.na(meta_prop)
@@ -452,18 +320,12 @@ grep_meta<-'content-language|description|keywords|twitter:card|twitter:title|twi
       ## readability grabs main article
       vals[['content']]  <- read_doc$summary()%>% rvest::html()
       vals[['h1']]       <- vals[['content']] %>% rvest::html_nodes('h1') %>% rvest::html_text()
-      ##vals[['h2']]       <- vals[['content']] %>% rvest::html_nodes('h2') %>% rvest::html_text()
-      ##vals[['h3']]       <- vals[['content']] %>% rvest::html_nodes('h3') %>% rvest::html_text()
-      ##vals[['h4']]       <- vals[['content']] %>% rvest::html_nodes('h4') %>% rvest::html_text()
       vals[['content']]  <- vals[['content']] %>% rvest::html_text()
     }else{
       vals[['content']]  <- doc %>% rvest::html_nodes('p')  %>% rvest::html_text()
       vals[['title']]    <- paste(rvest::html_nodes(doc, "title") %>% rvest::html_text(),collapse= ' ')
       vals[['span']]     <- doc %>% rvest::html_nodes('span')  %>% rvest::html_text()
       vals[['h1']]       <- doc %>% rvest::html_nodes('h1')  %>% rvest::html_text()
-      ##vals[['h2']]       <- doc %>% rvest::html_nodes('h2')  %>% rvest::html_text()
-      ##vals[['h3']]       <- doc %>% rvest::html_nodes('h3')  %>% rvest::html_text()
-      ##vals[['h4']]       <- doc %>% rvest::html_nodes('h4')  %>% rvest::html_text()
       vals[['time']]     <- doc %>% rvest::html_nodes('time')%>% rvest::html_text()
     }
 
@@ -479,20 +341,24 @@ grep_meta<-'content-language|description|keywords|twitter:card|twitter:title|twi
 
 }
 
-
-
-
 #' General Parser
 #'
 #' Extracts the title, headers, span, and p tags from a page.
 #'
 #' @param res Return value from curl.
+#' @param readability not used
+#' @param readability_content not used
+#' @param map_meta not used
 #' @return Returns character vector of links, or error message.
 #' @export
 #'
 
-parse_content <- function(res){
-
+parse_content <- function(res, readability, readability_content=F, map_meta=NULL){
+  # url<-"https://www.automotivelogistics.media/digital-technology/bmw-dingolfing-developing-industry-40-technology-for-logistics/40180.article"
+  # url<- "https://www.zamilsteel.com/ssd/en/2017-06-07-zamil-structural-steel-wins-sar-34m-contract-ethane-deep-recovery-facility-project"
+  # url<-"https://www.cnn.com"
+  # res<-curl::curl_fetch_memory(url)
+  # res$content<-rawToChar(res$content)
   filter_tags <- function(tag){
     tag_docs <- rvest::html_nodes(doc, tag ) %>% rvest::html_text()
     return(tag_docs)
@@ -521,70 +387,21 @@ parse_content <- function(res){
   }
 
   tryCatch({
-    doc <- rvest::html(res)
+    doc <- rvest::html(res$content)
+
     vals <- list()
     vals[['title']]   <- paste(rvest::html_nodes(doc, "title") %>% rvest::html_text(),collapse= ' ')
-    vals[['content']] <- filter_tags("p")
+    vals[['content']] <- filter_tags("body")
     vals[['h1']] <- filter_tags("h1")
     vals$meta <- parse_meta(doc,map_meta=map_meta)
-
+    vals$links <- doc %>% rvest::html_nodes('a') %>% rvest::html_attr('href')
+    vals$links <- xml2:::url_absolute(vals$link ,res$url)
+    vals$links <- grep("^https://|^http://", vals$links, value = TRUE)
+    vals$links <- sub("#.*", "", vals$links)
     return(vals)
 
   }, error = function(e){return(NA)} )
 }
-
-
-# #' Parse Contact
-# #'
-# #' Taken from crawl example given in the curl package.
-# #'
-# #' @param res Return value from curl.
-# #' @return Returns character vector of links, or error message.
-# #' @export
-# #'
-# 
-# parse_contact <- function(res){
-# 
-#   getThis <- function(page_list=NULL, this=NULL, innermost=T){
-#     if(length(page_list)==0) return(NA)
-#     idx<-unlist(lapply(page_list, function(x){
-#       grepl(this,x, ignore.case = T)
-#     }))
-# 
-#     if(!innermost) return(page_list[idx])
-#     idx2<-1:length(idx)
-#     idx <- max(idx2[idx])
-#     return(page_list[ idx] )
-#   }
-# 
-#   url<-'https://www.electranet.com.au/contact/'
-#   doc <-  rvest::html(url)
-#   if(length(doc)==0) return(NA)
-# 
-#   tryCatch({
-#     doc <- rvest::html(res)
-#     vals <- list()
-# 
-#     address <-NULL
-#     address <-doc %>% rvest::xml_nodes('address')  %>% rvest::html_text(trim=T)
-# 
-#     divs <-doc %>% rvest::xml_nodes('div')
-# 
-#     if(length(divs)==0) return(NA)
-#     contact <- getThis(divs, 'phone:|tel:address') %>% rvest::html_children() %>% rvest::html_text(trim=T)
-# 
-#     a <-doc %>% rvest::xml_nodes('a')
-#     social <- unlist(getThis(a, 'facebook|linkedin|instagram',innermost=F) %>% rvest::html_attr('href'))
-#     vals$contact <- c(address,contact)
-#     vals$contact <- gsub('\\r\\n|\\n|\\t',' ', vals$contact)
-#     vals$facebook <- social[grepl('www.facebook.com', social)]
-#     vals$linkedin <- social[grepl('www.linkedin.com', social)]
-#     vals$instagram <- social[grepl('www.instagram.com', social)]
-# 
-#     return(vals)
-# 
-#   }, error = function(e){return(NA)} )
-# }
 
 
 
@@ -614,12 +431,11 @@ parseR <- function(this_dir=NULL, parser=parse_content,n_threads=4, log_file = N
     fetched_links<-list()#new.env()
     promise_list<-list()
 
-    #chunk_con = gzfile(paste0(this_dir,'fetched.json.gz'),open='r')
-    chunk_con = file(paste0(this_dir,'fetched.json.gz'),open='r')
+    chunk_con = gzfile(paste0(this_dir,'fetched.json.gz'),open="rb")
     tot <- 0
     while ( TRUE ) {
 
-      f_chunk<-readLines(chunk_con,n=n)
+      f_chunk<-suppressWarnings(readLines(chunk_con,n=n))
       if (length(f_chunk) == 0 ) break
 
       tot<-tot + length(f_chunk)
@@ -802,10 +618,10 @@ parseR_2 <- function(this_dir=NULL,
     log_con<-crawlR:::set_log_file(log_file)
 
     ## file to place links
-    fh_links<-gzfile(paste0(this_dir,'fetched_links.json.gz'),open='a')
+    fh_links<-suppressWarnings(gzfile(paste0(this_dir,'fetched_links.json.gz'),open='a'))
 
     ## read crawled data
-    chunk_con = gzfile(paste0(this_dir,'fetched.json'),open='r')
+    chunk_con = suppressWarnings(gzfile(paste0(this_dir,'fetched.json.gz'),open='rb'))
 
     pg<-list()
     tot <- 0
@@ -813,7 +629,7 @@ parseR_2 <- function(this_dir=NULL,
 
       ## since file could be huge, rather than read the
       ## entire file into memory, it is read line by line
-      f_chunk<-readLines(chunk_con,n=1)
+      f_chunk<-suppressWarnings(readLines(chunk_con,n=1))
       tot<-tot + length(f_chunk)
       if (length(f_chunk) == 0 ){break;}
 
@@ -888,98 +704,4 @@ parseR_2 <- function(this_dir=NULL,
 
 
 
-#load(paste0(this_dir,'fetched_pg.rda'))
-
-# con <- gzfile(paste0(this_dir,'fetched.json.gz'))
-# fetched_pg<-lapply((readLines(con)), function(x){
-#   jsonlite::fromJSON(x)$ename
-# })
-# close(con)
-# names(fetched_pg) <- unlist(lapply(fetched_pg, function(x) x$url))
-#
-#   parse_dir<-paste0(this_dir,'parsed/')
-#   dir.create(parse_dir)
-#   fetched_links<-new.env()
-#   promise_list<-list()
-#
-#   theseNames<-names(fetched_pg)
-#   chunk_size<-floor(length(theseNames)/n_threads)
-#   chunk<-list()
-#   for(i in 1:n_threads){
-#     writeLines(paste('chunk num:',i))
-#     chunk_names<-theseNames[(chunk_size*(i-1)+1):(chunk_size*(i-1)+chunk_size)]
-#     if(i==n_threads){
-#       chunk_names<-theseNames[(chunk_size*(i-1)+1):length(theseNames)]
-#     }
-#     chunk[[i]] <- fetched_pg[chunk_names]
-#   }
-#   ## Running multiple threads means multiple output files.
-#   for(i in 1:n_threads){
-#     chunk_links<-list()
-#     writeLines(paste('thread num:',i,'of',n_threads))
-#     this_out <- paste0('parsed_sequential_',i,'.json')
-#     promise_list[[i]]<- future(
-#        globals=list(i=i,chunk=chunk,parse_dir=parse_dir,chunk_links=chunk_links,
-#                     get_links=get_links, `%>%` = magrittr::`%>%`,parser=parser, this_out=this_out),{
-#
-#
-#       con_out=base::file(base::paste0(parse_dir,this_out),open='a',blocking = F)
-#       thisChunk <- chunk[[i]]
-#
-#
-#
-#       ## parseR should be called in for loop
-#       for(pg in thisChunk){
-#           links <- NA
-#           if(is.null(pg$content)){next}
-#           if(is.na(pg$content)) {next}
-#           if(pg$content=='') {next}
-#           if(trimws(pg$content) ==' ') {next}
-#
-#           chk<-try({
-#             pg$headers<-curl::parse_headers_list(pg$headers)
-#             type1 <- trimws(strsplit(pg$type,";")[[1]][1])
-#             type2 <- trimws(strsplit(type1,"/")[[1]][1])
-#
-#             #fname <- pg$content
-#             if(type2=='text'){
-#               # con=base::gzfile(fname)
-#               # pg$content <- try(silent=T,{
-#               #     base::paste(base::readLines(con),collapse = ' ')
-#               #   })
-#               # if(class(pg$content)=='try-error'){
-#               #   print(paste('error:',fname))
-#               #   base::close(con)
-#               #   next
-#               # }
-#               #base::close(con)
-#               links<-get_links(pg)
-#
-#               pg$content <- parser(pg$content)
-#
-#               base::writeLines(jsonlite::toJSON(pg), con = con_out)
-#             }
-#             if(type1=='application/pdf'){
-#               links <- NA
-#               fname <- pg$content
-#               pg$content <- pdftools::pdf_text(fname)
-#               base::writeLines(jsonlite::toJSON(pg), con = con_out)
-#             }
-#           },silent=T)
-#
-#           if(class(chk)=='try-error') next
-#           #fetched_links[[pg$url]]<-links
-#           chunk_links[[pg$url]]<-links
-#         }
-#       base::close(con_out)
-#         return(chunk_links)
-#       }) %plan% multiprocess
-#   }
-#   for(i in 1:length(chunk)){
-#     chunked_links <- value(promise_list[[i]])
-#     #chunked_links<-chunk_links
-#     for(j in names(chunked_links)){
-#       fetched_links[[j]]<-chunked_links[[j]]
-#     }
-#   }
 
