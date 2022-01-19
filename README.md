@@ -88,14 +88,15 @@ Argument      |Description
 ## Examples
 
 ```r 
- devtools::install_github("barob1n/crawlR")
+## install package
+devtools::install_github("barob1n/crawlR")
  
- ## Create Seed List
- seeds <- c("https://www.cnn.com", "https://www.npr.org")
+## Create Seed List
+seeds <- c("https://www.cnn.com", "https://www.npr.org")
  
- ## Creates crawlDB, inject seeds, and crawl 
+## Creates crawlDB, inject seeds, and crawl 
  
- crawlR(seeds = seeds,
+crawlR(seeds = seeds,
   work_dir="~/crawl",
   out_dir = "~/crawl/news/",
   max_concurr = 50,  
@@ -112,13 +113,12 @@ Argument      |Description
   max_urls_per_host = 10,
   parser = crawlR::parse_content)
   
- 
 ## Crawl again, this time using filters.
  
 filter_in=paste0("police,shooting,gun control")
 filter_out=paste0("sports,weather")
  
- crawlR(seeds = NULL,       # no seeds - will query crawlDB
+crawlR(seeds = NULL,       # no seeds - will query crawlDB
   work_dir= "~/crawl/",
   out_dir = "~/crawl/news/",
   max_concurr = 50,
@@ -134,16 +134,15 @@ filter_out=paste0("sports,weather")
   topN=10,
   max_urls_per_host = 10,
   parser = crawlR::parse_content)
-  
  
- ## Run a third time, providing some new/additional seeds.
+## Run a third time, providing some new/additional seeds.
  
- new_seeds <- c("https://ge.com", "https://www.ford.com")
+new_seeds <- c("https://ge.com", "https://www.ford.com")
  
- crawlR(seeds = new_seeds,  # seeds will be added to crawlDB 
- work_dir= "~/crawl/",
- out_dir = "~/crawl/auto/",
- max_concurr = 50,
+crawlR(seeds = new_seeds,  # seeds will be added to crawlDB 
+  work_dir= "~/crawl/",
+  out_dir = "~/crawl/auto/",
+  max_concurr = 50,
   max_host = 5,
   timeout = Inf,
   external_site = F,
