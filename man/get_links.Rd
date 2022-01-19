@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{get_links}
 \alias{get_links}
-\title{Grab Links Found on Webpage.}
+\title{Extract Links Found on Webpage.}
 \usage{
 get_links(res)
 }
@@ -13,5 +13,5 @@ get_links(res)
 Returns character vector of links.
 }
 \description{
-Parses HTML for URLs and stores then in the linkDB.
+Extracts links from html.
 }

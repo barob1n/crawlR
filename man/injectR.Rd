@@ -2,16 +2,16 @@
 % Please edit documentation in R/injectR.R
 \name{injectR}
 \alias{injectR}
-\title{Inject Seed List into CrawlDB.}
+\title{Inject seeds into crawlDB}
 \usage{
 injectR(out_dir = NULL, work_dir = NULL, seeds = NULL, log_file = NULL)
 }
 \arguments{
-\item{out_dir}{Output Directory directory for this crawl.}
+\item{out_dir}{(Required) Output Directory directory for this crawl.}
 
 \item{work_dir}{(Required) Working Directory directory for this crawl.}
 
-\item{seeds}{Url's to inject.}
+\item{seeds}{(Required) Url's to inject.}
 
 \item{log_file}{Name of log file. If null, writes to stdout().}
 }
@@ -19,5 +19,7 @@ injectR(out_dir = NULL, work_dir = NULL, seeds = NULL, log_file = NULL)
 Returns character vector of links, or error message.
 }
 \description{
-Inject Seed List into CrawlDB.
+Inject seeds into crawlDB. If no crawlDB is found in \emph{work_dir}, a crawlDB will be created.
+
+Can be called alone or thru the crawlR function. Seeds can be injected at anytime.
 }

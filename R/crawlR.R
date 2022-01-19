@@ -1,14 +1,26 @@
-#' Crawl and Parse Web Pages
+#' CrawlR - Async Web Crawler for R
 #'
-#' Utilizes the curl package to crawl through a
+#' @description
+#' Batch based web-crawler utilizing the asynchronous features of R's curl package to crawl through a
 #' list of user supplied websites to given depth.
-#' Unlesss overriden, crawlR observes robots.txt.
 #'
-#' After each iteration of crawling, the crawled
-#' pages are read from disk, parsed, and writen
-#' back to disk. The read/parse phase is done in
-#' parrallel using the future package
+#' Each iteration consists of injecting seeds (if given), generating a fetch list, fetching pages
+#' to disk, parsing pages, and then finally updating the links in the crawlDB.
 #'
+#' After initial seeding, subsequent iterations query the crawlDB to generate a fetch list.  Additional
+#' seeds can be added at any time. Re-seeding with previously given seeds will re-crawl those seeds.
+#'
+#' @details
+#' Each phase of the process is contained within a function of the *crawlR* package:
+#'   1. *injectR* - Inject seeds into crawlDB.
+#'   2. *generateR* - Generate fetch list from crawlDB.
+#'   3. *fetchR* - Fetch links in fetch list.
+#'   4. *parseR* - Parse fetched pages.
+#'   5. *updateR* - Update crawlDB.
+#'
+#' These can be called individually or using the all-in-one *crawlR* function.
+#'
+#' @md
 #'
 #' @param seeds Seed url's. If null, then the work_dir must contain a linkDB.  If
 #'     additional seeds are provided after inital seeding, the new seed url's
@@ -31,14 +43,13 @@
 #' @param queue_scl (deprecated) max_concur * queue_scl gives que.
 #' @param topN Select the 'topN' links based on score for crawling.
 #' @param max_urls_per_host Maximum url's from each host when creating fetch list for each link depth.
-#' @param n_threads (depricated) Only applies to parsing.
-#' @param parser Parsing function to use.
+#' @param parser Parsing function for page content to use.
 #' @param score_func URL Scoring Function.
+#' @param min_score minimum score during generate for urls
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @param seeds_only If true, only seeds will be pulled from linkDB.
 #' @param readability_content process content using readability
 #' @param overwrite If true, data for url will be overwritten in linkDB.
-#' @param min_score minimum score during generate for urls
 #' @import curl
 #' @import xml2
 #' @importFrom magrittr  %>%
@@ -98,15 +109,14 @@ crawlR <- function(
     queue_scl = 1,
     topN=NULL,
     max_urls_per_host = 10,
-    n_threads=1,
     parser = crawlR:::parse_content,
     score_func=NULL,
+    min_score=0.0,
     log_file = NULL,
     seeds_only = F,
     crawl_int=NULL,
     readability_content=F,
-    overwrite = F,
-    min_score=0.0){
+    overwrite = F){
 
 
     tryCatch({
@@ -195,8 +205,6 @@ crawlR <- function(
                     timeout_request=timeout_request,
                     queue_scl=queue_scl,
                     comments=paste0('Depth: ',lvl ),
-                    save_to_disk = T,
-                    return=F,
                     log_file = log_file,
                     readability_content=readability_content,
                     parser=parser)
@@ -206,7 +214,7 @@ crawlR <- function(
         write_log(paste('crawlR: Finished Fetching -', Sys.time()), log_file)
         write_log(paste('crawlR: Starting Parser -',Sys.time()), log_file)
 
-        val<-parseR_2(this_dir = this_dir, parser=parser,log_file = log_file)
+        val <- parseR_2(this_dir = this_dir, parser=parser,log_file = log_file)
         if(class(val)=='error') stop(paste(val))
 
         write_log(paste('crawlR: Finihsed Parsing -',Sys.time()), log_file)

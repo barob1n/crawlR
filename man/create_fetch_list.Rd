@@ -2,18 +2,19 @@
 % Please edit documentation in R/helpers.R
 \name{create_fetch_list}
 \alias{create_fetch_list}
-\title{Creates a Fetch List from linkDB File}
+\title{Creates a Fetch List}
 \usage{
 create_fetch_list(fetch_list, crawl_delay = 30)
 }
 \arguments{
-\item{crawl_delay}{delay between successive requests to server.}
+\item{fetch_list}{linkDB}
 
-\item{linkDB}{linkDB}
+\item{crawl_delay}{delay between successive requests to server.}
 }
 \value{
 fetchable list
 }
 \description{
-Creates a Fetch List from linkDB File
+Creates/formats fetch list from links queried during the generateR function.
+Output fetch list is used by the fetchR functions.
 }

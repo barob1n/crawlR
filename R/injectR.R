@@ -1,12 +1,16 @@
-#' Inject Seed List into CrawlDB.
+#' Inject seeds into crawlDB
 #'
+#' @description
+#' Inject seeds into crawlDB. If no crawlDB is found in *work_dir*, a crawlDB will be created.
 #'
+#' Can be called alone or thru the crawlR function. Seeds can be injected at anytime.
 #'
-#' @param out_dir  Output Directory directory for this crawl.
+#' @param out_dir  (Required) Output Directory directory for this crawl.
 #' @param work_dir (Required) Working Directory directory for this crawl.
-#' @param seeds Url's to inject.
+#' @param seeds (Required) Url's to inject.
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @return Returns character vector of links, or error message.
+#' @md
 #' @export
 #'
 injectR <- function(out_dir = NULL,

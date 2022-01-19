@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{writeR}
 \alias{writeR}
-\title{Base Output Writer}
+\title{Base Output Writer (depricated)}
 \usage{
 writeR(out_dir = NULL, res = NULL, compress = T, extLookUp = NULL)
 }
@@ -13,7 +13,7 @@ writeR(out_dir = NULL, res = NULL, compress = T, extLookUp = NULL)
 
 \item{compress}{If true, text/html is compressed.}
 
-\item{type}{content-type of crawled page.}
+\item{extLookUp}{lookup file extension}
 }
 \value{
 Returns filename of output.

@@ -1,8 +1,9 @@
-#' Generate Fetch List of Url's from linkDB
+#' Generate fetch list of Url's from crawlDB
 #'
+#' @description
+#' Queries the crawlDB for urls matching the given parameters.
 #'
-#'
-#' @param out_dir Output directory for this crawl.
+#' @param out_dir (Required) Output directory for this crawl.
 #' @param work_dir (Required) Working directory for this crawl.
 #' @param regExOut RegEx URL filter - omit links with these keywords.
 #' @param regExIn  RegEx URL filter - keep links with these keywords.
@@ -219,8 +220,6 @@ generateR <- function(out_dir=NULL,
   finally = {
     DBI::dbDisconnect(crawlDB)
     if(class(log_con)[1]=="file")close(log_con)
-
-
   })
 
 

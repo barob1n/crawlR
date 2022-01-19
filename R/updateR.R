@@ -1,6 +1,7 @@
-#' Update linkDB and pgDB After Crawl
+#' Update crawlDB
 #'
-#' Updates the various DB's by taking the last fetched_pg file.
+#' @description
+#' Updates the crawlDB with links discovered during crawl. The crawlDB must already exist.
 #'
 #'
 #' @param work_dir (Required) Working directory for this crawl.
@@ -18,6 +19,7 @@ updateR <- function(work_dir = NULL,
                     score_func=NULL
                     ){
 
+  ## set up logging
   log_con<-crawlR:::set_log_file(log_file)
 
   ## enviroment to hold models used by scoring function
@@ -25,13 +27,13 @@ updateR <- function(work_dir = NULL,
 
   tryCatch({
 
-    ## JSON file with extracted links
-    links<-paste0(out_dir,"fetched_links.json.gz")
-
     if(is.null(work_dir)) stop('Work directory not provided.')
     if(is.null(out_dir)) stop('Output directory not provided.')
     if(!dir.exists(work_dir)) stop('Work directory does not exist.')
     if(!file.exists(links)){stop("can't find previous runs fetched_links file.")}
+
+    ## JSON file with extracted links
+    links<-paste0(out_dir,"fetched_links.json.gz")
 
     ## file handler for links
     fh_links<-suppressWarnings(gzfile(links,open='rb'))
@@ -47,78 +49,75 @@ updateR <- function(work_dir = NULL,
     cnt<-0
     ## read until end
     while(TRUE){
+
+      ## cnt used for printing after certain number
       cnt<-cnt+1
-      try(silent=T, {
 
-        ## grab links output from parse phase
-        fetched_links<-suppressWarnings(readLines(con=fh_links,n=100))
+      ## grab links output from parse phase
+      fetched_links<-suppressWarnings(readLines(con=fh_links,n=100))
 
-        ## break at end
-        if(NROW(fetched_links)==0) break;
+      ## break at end
+      if(NROW(fetched_links)==0) break;
 
-        ## cnt used for printing after certain number
-        cnt<-1
-
-
-        ## parse links from json
-        fetched_links<- lapply(fetched_links,function(x){
-          cnt<<-cnt+1
-          x<-try({jsonlite::fromJSON(x)},silent=T)
-          if(class(x)=='try-error'){
-            return(NULL)
-          }else{
-            return(x)
-          }
-        })
-
-        ## clean up links
-        fetched_links<-do.call(dplyr::bind_rows ,fetched_links)
-        if(is.null(fetched_links$port)) fetched_links$port<-""
-        fetched_links$url<-normalize_url(fetched_links$url)
-        fetched_links<-fetched_links[!fetched_links$url %in% fetch_list$url,]
-        fetched_links$crawled <- 0
-        fetched_links$next_crawl <- as.numeric(Sys.Date())
-        fetched_links$is_seed <- 0
-        fetched_links$last_crawl <- as.numeric(Sys.Date())
-
-        if(is.null(score_func)){
-          fetched_links$score <- 0
-          writeLines(paste("UpdateR: No Scoring function.  "), con=log_con)
+      ## parse links from json
+      fetched_links<- lapply(fetched_links,function(x){
+        x<-try({jsonlite::fromJSON(x)},silent=T)
+        if(class(x)=='try-error'){
+          return(NULL)
         }else{
-          ## scored in batches in-case large model used to score
-          n_rows<-NROW(fetched_links)
-          n<-20000
-          idx<-ceiling(n_rows/n)
-          urls<-unlist(fetched_links$path)
-
-          #writeLines(paste("UpdateR: Scoring URL's  "), con=log_con)
-          fetched_links$score<-unlist(
-            lapply(1:idx,function(i){
-              if(cnt%%100==0) writeLines(paste("UpdateR: Scoring URL's. Batch #:",cnt), con=log_con)
-              st<-(i-1)*n+1
-              en<-min(n_rows,i*n)
-              return(score_func(urls[st:en],url_vectorizer,glm_url_model,url_tfidf,url_lsa))
-            })
-          )
+          return(x)
         }
-
-        ## Must be in correct order before inserting into linkDB
-        col_order <- c(
-          'scheme', 'server', 'port', 'user', 'path', 'query',
-          'fragment','crawled', 'next_crawl', 'url', 'is_seed',
-          'depth','crawl_int', 'last_crawl','score')
-
-        fetched_links <- fetched_links[,col_order]
-
-        ## remove duplicates
-        dup <- duplicated(fetched_links$url)
-        DBI::dbWriteTable(
-          crawlDB,
-          'fetched_links',
-          fetched_links[!dup,],
-          overwrite=F, temporary=T, append=T)
-
       })
+
+      ## clean/format links
+      fetched_links<-do.call(dplyr::bind_rows ,fetched_links)
+      if(is.null(fetched_links$port)) fetched_links$port<-""
+      fetched_links$url<-normalize_url(fetched_links$url)
+      fetched_links<-fetched_links[!fetched_links$url %in% fetch_list$url,]
+      fetched_links$crawled <- 0
+      fetched_links$next_crawl <- as.numeric(Sys.Date())
+      fetched_links$is_seed <- 0
+      fetched_links$last_crawl <- as.numeric(Sys.Date())
+
+      ## if no scoring function then score = 0.
+      if(is.null(score_func)){
+        fetched_links$score <- 0
+        writeLines(paste("UpdateR: No Scoring function.  "), con=log_con)
+      }else{
+
+        ## scored in batches incase huge number of links are found
+        n_rows<-NROW(fetched_links)
+        n<-20000
+        idx<-ceiling(n_rows/n)
+
+        ## scored only on path. this might be too restrictive.
+        urls<-unlist(fetched_links$path)
+
+        fetched_links$score<-unlist(
+          lapply(1:idx,function(i){
+            if(cnt%%100==0) writeLines(paste("UpdateR: Scoring URL's. Batch #:",cnt), con=log_con)
+            st<-(i-1)*n+1
+            en<-min(n_rows,i*n)
+            return(score_func(urls[st:en],url_vectorizer,glm_url_model,url_tfidf,url_lsa))
+          })
+        )
+      }
+
+      ## Must be in correct order before inserting into linkDB
+      col_order <- c(
+        'scheme', 'server', 'port', 'user', 'path', 'query',
+        'fragment','crawled', 'next_crawl', 'url', 'is_seed',
+        'depth','crawl_int', 'last_crawl','score')
+
+      fetched_links <- fetched_links[,col_order]
+
+      ## remove duplicates
+      dup <- duplicated(fetched_links$url)
+      DBI::dbWriteTable(
+        crawlDB,
+        'fetched_links',
+        fetched_links[!dup,],
+        overwrite=F, temporary=T, append=T)
     }
 
     ## unload files used by score func

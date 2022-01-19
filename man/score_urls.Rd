@@ -18,5 +18,5 @@ score_urls(
 \item{scores}{values associated with terms}
 }
 \description{
-Sets the out file for logs.
+Function to score URL's
 }

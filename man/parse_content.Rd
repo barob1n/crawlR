@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{parse_content}
 \alias{parse_content}
-\title{General Parser}
+\title{General Parser for HTML}
 \usage{
 parse_content(res, readability, readability_content = F, map_meta = NULL)
 }
@@ -19,5 +19,5 @@ parse_content(res, readability, readability_content = F, map_meta = NULL)
 Returns character vector of links, or error message.
 }
 \description{
-Extracts the title, headers, span, and p tags from a page.
+Extracts the title, h1 headers, major meta-tags, and body tags from a page.
 }

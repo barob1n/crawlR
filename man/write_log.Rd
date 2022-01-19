@@ -12,5 +12,5 @@ write_log(message, log_file)
 \item{log_file}{If null, defaults to stdout().}
 }
 \description{
-Sets the out file for logs.
+Writes to log file.
 }

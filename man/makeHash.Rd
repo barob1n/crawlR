@@ -2,18 +2,16 @@
 % Please edit documentation in R/helpers.R
 \name{makeHash}
 \alias{makeHash}
-\title{Hashes URL to Make Valide (and unique) File Names}
+\title{Convert String to hash}
 \usage{
 makeHash(url)
 }
 \arguments{
 \item{url}{Url of crawled page.}
-
-\item{type}{content-type of crawled page.}
 }
 \value{
 Returns character vector of links, or error message.
 }
 \description{
-Used by file output.
+uses openssl::md5 to convert url's to md5-hashes.
 }

@@ -2,18 +2,20 @@
 % Please edit documentation in R/helpers.R
 \name{parseExt}
 \alias{parseExt}
-\title{Get File Extension from Content-Type}
+\title{Get file extension from Content-Type}
 \usage{
 parseExt(type, extLookUp)
 }
 \arguments{
 \item{type}{content-type of crawled page.}
+
+\item{extLookUp}{file extension lookup.}
 }
 \value{
 extention as string
 }
 \description{
-Uses lookup provided by rTika to get file extension.
+Uses lookup provided to get file extension.
 content-type: text/html would return ".html" file extension, and
 content-type: application/pdf would return ".pdf".
 }

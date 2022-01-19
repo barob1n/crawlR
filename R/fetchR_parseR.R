@@ -16,8 +16,6 @@
 #' @param timeout_request per request timeout
 #' @param queue_scl Scaler
 #' @param comments Some comments to print while running.
-#' @param save_to_disk Save output to disk or not.
-#' @param return Return output or not.
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @param readability_content T
 #' @param parser parse func
@@ -34,11 +32,9 @@ fetchR_parseR<- function(
    max_concurr=NULL,
    max_host=NULL,
    timeout=Inf,
-   timeout_request=timeout_request,
+   timeout_request=NULL,
    queue_scl=1,
    comments="",
-   save_to_disk=T,
-   return=F,
    log_file=NULL,
    readability_content=F,
    parser=crawlR::parse_content_fetch){
@@ -61,9 +57,8 @@ fetchR_parseR<- function(
       readability<-NULL
     }
 
-
-    if(!return & !save_to_disk){stop('return==F and save_to_disk==F - this will not return or save any data.')}
-    if(is.null(out_dir) & save_to_disk){stop('save_to_disk==TRUE, but no output directory provided.')}
+    #if(!return & !save_to_disk){stop('return==F and save_to_disk==F - this will not return or save any data.')}
+    if(is.null(out_dir)){stop(' no output directory provided.')}
 
     tika_ext <- rtika:::tika_mimetype
 
@@ -179,31 +174,31 @@ fetchR_parseR<- function(
       curl::handle_setopt(h, .list=list(timeout=round(timeout_request)))
       curl::curl_fetch_multi(url, handle = h, pool = pool, done = function(res){
         if(res$status >=200 & res$status<300){
-          if(save_to_disk){
-            ## URL's are not usually valid filenames-hashes of them are.
-            tryCatch({
-              res$hash_name <- paste0('crawlR_', openssl::md5(res$url), collapse='')
-              res$headers <- rawToChar(res$headers)
-              type <- strsplit(strsplit(res$type,';')[[1]] ,split='/')[[1]]
-              res$url<-url
-              res$depth<-depth
-              ## check for valid type
-              if(is.na(type[1])) type<-c("","")
-              if(type[1]=='text'){
-                res$content<-rawToChar(res$content)
-                if(res$url!="") fetched_pg[[res$url]] <-res
-              }else if(type[2]=='pdf'){
-                # fname <- paste0(out_dir, res$hash_name, ".pdf", collapse = "")
-                # fh <- file(fname, open = "wb")
-                # writeBin((res$content), con = fh)
-                # close(fh)
-                # res$content<-fname
-                # fetched_pg[[res$url]] <-res
-              }
-            },error = function(e) {
-              writeLines(paste('fetchR:', url,'-',substr(e,1,50)),con = log_con)
-            })
-          }
+
+          ## URL's are not usually valid filenames-hashes of them are.
+          tryCatch({
+            res$hash_name <- paste0('crawlR_', openssl::md5(res$url), collapse='')
+            res$headers <- rawToChar(res$headers)
+            type <- strsplit(strsplit(res$type,';')[[1]] ,split='/')[[1]]
+            res$url<-url
+            res$depth<-depth
+            ## check for valid type
+            if(is.na(type[1])) type<-c("","")
+            if(type[1]=='text'){
+              res$content<-rawToChar(res$content)
+              if(res$url!="") fetched_pg[[res$url]] <-res
+            }else if(type[2]=='pdf'){
+              # fname <- paste0(out_dir, res$hash_name, ".pdf", collapse = "")
+              # fh <- file(fname, open = "wb")
+              # writeBin((res$content), con = fh)
+              # close(fh)
+              # res$content<-fname
+              # fetched_pg[[res$url]] <-res
+            }
+          },error = function(e) {
+            writeLines(paste('fetchR:', url,'-',substr(e,1,50)),con = log_con)
+          })
+
         }else{
           res$content <- NA
         }
@@ -248,13 +243,15 @@ fetchR_parseR<- function(
     queue$init_time <- Sys.time()
     out <- curl::multi_run(pool = pool, timeout = timeout)
 
-  }, error = function(e){
+  },
+  error = function(e){
     writeLines(paste('fetchR:',e), con=log_con)
     e<-paste('fetchR:',e)
     class(e) <- 'error'
     return(e)
 
-  }, finally = {
+  },
+  finally = {
 
     rm(list=ls(fetch_list_env),envir=fetch_list_env)
     rm(list=ls(queue),envir=queue)
@@ -262,12 +259,12 @@ fetchR_parseR<- function(
 
     close(json_out)
 
-    if(save_to_disk){
-      writeLines(paste('fetchR: Saving Page Data.'), con = log_con)
-      writeLines(paste('fetchR: Done Saving Page Data.'),con = log_con)
-    }
+
+    writeLines(paste('fetchR: Saving Page Data.'), con = log_con)
+    writeLines(paste('fetchR: Done Saving Page Data.'),con = log_con)
+
     if(class(log_con)[1]=="file") close(log_con)
-    if(return)  return(list(fetched_pg=as.list(fetched_pg)))
+    return(list(fetched_pg=as.list(fetched_pg)))
   })
 }
 

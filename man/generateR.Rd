@@ -2,7 +2,7 @@
 % Please edit documentation in R/generateR.R
 \name{generateR}
 \alias{generateR}
-\title{Generate Fetch List of Url's from linkDB}
+\title{Generate fetch list of Url's from crawlDB}
 \usage{
 generateR(
   out_dir = NULL,
@@ -21,7 +21,7 @@ generateR(
 )
 }
 \arguments{
-\item{out_dir}{Output directory for this crawl.}
+\item{out_dir}{(Required) Output directory for this crawl.}
 
 \item{work_dir}{(Required) Working directory for this crawl.}
 
@@ -49,5 +49,5 @@ generateR(
 Returns character vector of links, or error message.
 }
 \description{
-Generate Fetch List of Url's from linkDB
+Queries the crawlDB for urls matching the given parameters.
 }

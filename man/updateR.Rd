@@ -2,7 +2,7 @@
 % Please edit documentation in R/updateR.R
 \name{updateR}
 \alias{updateR}
-\title{Update linkDB and pgDB After Crawl}
+\title{Update crawlDB}
 \usage{
 updateR(
   work_dir = NULL,
@@ -27,5 +27,5 @@ updateR(
 Returns character vector of links, or error message.
 }
 \description{
-Updates the various DB's by taking the last fetched_pg file.
+Updates the crawlDB with links discovered during crawl. The crawlDB must already exist.
 }

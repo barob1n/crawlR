@@ -1,5 +1,6 @@
 #' Log Out
 #'
+#' @description
 #' Sets the out file for logs.
 #'
 #' @param log_file If null, defaults to stdout().
@@ -17,7 +18,9 @@ set_log_file <- function(log_file){
 
 #' Score urls
 #'
-#' Sets the out file for logs.
+#' @description
+#' Function to score URL's
+#'
 #' @param paths url paths to score
 #' @param terms terms to use in scoring
 #' @param scores values associated with terms
@@ -27,7 +30,7 @@ score_urls <- function(paths=NULL,
                        terms=c(),
                        scores=c(rep(1,  6),
                                 rep(1, 16),
-                                rep(1,  5))){
+                                rep(1, 5))){
 
   if(is.null(paths)) return(0)
   if(NROW(terms)==0) return(0)
@@ -43,7 +46,8 @@ score_urls <- function(paths=NULL,
 
 #' Write to log
 #'
-#' Sets the out file for logs.
+#' @description
+#' Writes to log file.
 #'
 #' @param log_file If null, defaults to stdout().
 #' @param message  If null, defaults to stdout().
@@ -57,9 +61,10 @@ write_log <- function(message, log_file){
 
 
 
-#' Grab Links Found on Webpage.
+#' Extract Links Found on Webpage.
 #'
-#' Parses HTML for URLs and stores then in the linkDB.
+#' @description
+#' Extracts links from html.
 #'
 #' @param res Return value from curl.
 #' @return Returns character vector of links.
@@ -80,13 +85,15 @@ get_links <- function(res){
 }
 
 
-#' Get File Extension from Content-Type
+#' Get file extension from Content-Type
 #'
-#' Uses lookup provided by rTika to get file extension.
+#' @description
+#' Uses lookup provided to get file extension.
 #' content-type: text/html would return ".html" file extension, and
 #' content-type: application/pdf would return ".pdf".
 #'
 #' @param type content-type of crawled page.
+#' @param extLookUp file extension lookup.
 #' @return extention as string
 #' @export
 #'
@@ -101,12 +108,12 @@ parseExt <- function(type, extLookUp){
 }
 
 
-#' Hashes URL to Make Valide (and unique) File Names
+#' Convert String to hash
 #'
-#' Used by file output.
+#' @description
+#' uses openssl::md5 to convert url's to md5-hashes.
 #'
 #' @param url Url of crawled page.
-#' @param type content-type of crawled page.
 #' @return Returns character vector of links, or error message.
 #' @export
 #'
@@ -115,16 +122,16 @@ makeHash = function(url){
 }
 
 
-#' Base Output Writer
+#' Base Output Writer (depricated)
 #'
 #' Write web page to disk. Return file name of output.
 #'
 #' @param out_dir Directory where output is written.
-#' @param type content-type of crawled page.
 #' @param res Crawled page data.
 #' @param compress If true, text/html is compressed.
+#' @param extLookUp lookup file extension
 #' @return Returns filename of output.
-#' @export
+#'
 #'
 writeR <- function(out_dir=NULL,res=NULL,compress=T,extLookUp=NULL){
   stopifnot(!is.null(out_dir)|!is.null(res$type))
@@ -160,7 +167,10 @@ writeR <- function(out_dir=NULL,res=NULL,compress=T,extLookUp=NULL){
 
 #' Normalize Url's
 #'
-#' Normalize url's
+#' @description
+#' Converts url's to lowercase, removes any trailing back slashes,
+#' appends 'http://' to front if missing, and removes everything
+#' following #-marks.
 #'
 #' @param url url to normalize
 #' @return URLS beginning with (http/https), followed by ://www..
@@ -177,10 +187,14 @@ normalize_url <- function(url){
 
 }
 
-#' Creates a Fetch List from linkDB File
+#' Creates a Fetch List
+#'
+#' @description
+#' Creates/formats fetch list from links queried during the generateR function.
+#' Output fetch list is used by the fetchR functions.
 #'
 #'
-#' @param linkDB linkDB
+#' @param fetch_list linkDB
 #' @param crawl_delay delay between successive requests to server.
 #' @return fetchable list
 #' @export
@@ -313,9 +327,8 @@ grep_meta<-'content-language|description|keywords|twitter:card|twitter:title|twi
       vals[['title']]   <- read_doc$title()
 
       ## grab these outside of readability since often ommited
-      #vals[['span']]     <- doc %>% rvest::html_nodes('span') %>% rvest::html_text()
       vals[['time']]     <- doc %>% rvest::html_nodes('time') %>% rvest::html_text()
-      ##vals[['p']]        <- doc %>% rvest::html_nodes('p')    %>% rvest::html_text()
+
 
       ## readability grabs main article
       vals[['content']]  <- read_doc$summary()%>% rvest::html()
@@ -341,9 +354,10 @@ grep_meta<-'content-language|description|keywords|twitter:card|twitter:title|twi
 
 }
 
-#' General Parser
+#' General Parser for HTML
 #'
-#' Extracts the title, headers, span, and p tags from a page.
+#' @description
+#' Extracts the title, h1 headers, major meta-tags, and body tags from a page.
 #'
 #' @param res Return value from curl.
 #' @param readability not used
@@ -407,6 +421,121 @@ parse_content <- function(res, readability, readability_content=F, map_meta=NULL
 
 #' Parse Processor
 #'
+#' @description
+#' Handles parseing of extracted links and page content.  Page content
+#' is parsed using 'parser' function passed in as variable.
+#'
+#' @param this_dir Fetch directory to parse.
+#' @param parser Function that will be used for parseing.
+#' @param log_file Log file name. If null, defaults to stdout().
+#' @return URLS beginning with (http/https), followed by ://www..
+#' @export
+#'
+
+parseR <- function(this_dir=NULL,
+                     parser=parse_content,
+                     log_file = NULL){
+
+  process_links<-function(x){
+    if(is.null((x))){return()}
+    if(is.null((x$links))){return()}
+    if(NROW((x$links))==0){return()}
+    if(is.null(x$port)) x$port<-""
+    x$port[is.na(x$port)]<-''
+    this_depth<-0
+    if(!is.null(x$depth)) this_depth<-x$depth
+    links<-xml2::url_parse(unlist(x$links))
+    links$url <- paste0(links$scheme,"://",links$server,links$path)
+    links$url <- ifelse(links$query !="", paste0(links$url,'?',links$query),links$url)
+    links$url <- normalize_url(links$url)
+    links$crawled<-0
+    links$is_seed<-0
+    links$next_crawl<-as.numeric(Sys.Date())
+    links$depth<-this_depth + 1
+    links$crawl_int<-1
+    return(links)
+  }
+
+  ## set logging
+  log_con<-crawlR:::set_log_file(log_file)
+
+  ## big try catch for passing back to crawlR
+  tryCatch({
+
+    ## file to place links
+    fh_links<-suppressWarnings(gzfile(paste0(this_dir,'fetched_links.json.gz'),open='a'))
+
+    ## read crawled data
+    chunk_con = suppressWarnings(gzfile(paste0(this_dir,'fetched.json.gz'),open='rb'))
+
+    tot <- 0
+    while ( TRUE ) {
+
+      ## since file could be huge, rather than read the
+      ## entire file into memory, it is read line by line
+      f_chunk<-suppressWarnings(readLines(chunk_con,n=1))
+
+      ## track number of lines read
+      tot<-tot + NROW(f_chunk)
+
+      ## break if no more data
+      if (NROW(f_chunk) == 0 ){break;}
+
+      ## le' counter
+      if(tot %% 1000 == 0){writeLines(paste('parseR: Total Done:',tot), con = log_con)}
+
+      ## sometimes parse fails
+      pg <- tryCatch({jsonlite::fromJSON(f_chunk)$ename}, error = function(e) e )
+
+      ## must parse, must have url, and must have content
+      if(inherits(pg, "error")) next
+      if(is.null(pg)) next
+      if(sum(is.na(pg))==NROW(pg)) next
+      if(is.null(pg$url) | is.null(pg$content)) next
+      if(is.na(pg$url[1]) | is.na(pg$content[1]))next
+
+      output<- tryCatch({
+         ## headers same for any type
+         pg$headers<-curl::parse_headers_list(pg$headers)
+
+         ## if text/html
+         if(grepl('text',tolower(pg$type))){
+           if(length(pg$content)>0){
+             processed_links<-process_links(list(url=pg$url,links=pg$content$links,depth=pg$depth))
+             writeLines(jsonlite::toJSON(processed_links), con = fh_links )
+           }
+         }else if(grepl('pdf',tolower(pg$type))){
+           next
+         }else {
+           next
+         }
+       },
+       error = function(e){
+         writeLines(paste('parseR: Recoverable Error',e), con=log_con)
+       })
+
+    }## End of while loop.
+
+  },
+  error = function(e){
+
+    writeLines(paste('parseR:',e), con=log_con)
+    e<-paste('parseR:',e)
+    class(e) <- 'error'
+
+  },
+  finally = {
+
+    close(chunk_con)
+    close(fh_links)
+    if(class(log_con)[1]=="file") close(log_con)
+
+  })
+}
+
+
+#' Parse Processor
+#'
 #'
 #' @param this_dir Fetch directory to parse.
 #' @param parseR Function that will be used for parseing.
@@ -417,14 +546,11 @@ parse_content <- function(res, readability, readability_content=F, map_meta=NULL
 #' @export
 #'
 
-parseR <- function(this_dir=NULL, parser=parse_content,n_threads=4, log_file = NULL,n=4000){
+parseR_old <- function(this_dir=NULL, parser=parse_content,n_threads=4, log_file = NULL,n=4000){
+
+  log_con<-set_log_file(log_file)
 
   tryCatch({
-
-    log_con<-set_log_file(log_file)
-
-   # plan(multiprocess, workers = n_threads, gc = TRUE)
-
 
     parse_dir<-paste0(this_dir,'parsed/')
     dir.create(parse_dir)
@@ -448,7 +574,7 @@ parseR <- function(this_dir=NULL, parser=parse_content,n_threads=4, log_file = N
       })
 
 
-       theseNames <- unlist(lapply(fetched_pg, function(x){
+      theseNames <- unlist(lapply(fetched_pg, function(x){
         if(is.null(x)) return('drop_me')
         if(is.na(x))   return('drop_me')
         if(is.null(x$url)) return('drop_me')
@@ -483,8 +609,8 @@ parseR <- function(this_dir=NULL, parser=parse_content,n_threads=4, log_file = N
                          thisChunk <- chunk[[i]]
 
                          ## parseR should be called in for loop
-                          for(pg in thisChunk){
-                         #apply(thisChunk,function(pg){
+                         for(pg in thisChunk){
+                           #apply(thisChunk,function(pg){
                            links<-NA
                            # if(is.null(pg)){return()}
                            # if(is.na(pg)){return()}
@@ -569,137 +695,6 @@ parseR <- function(this_dir=NULL, parser=parse_content,n_threads=4, log_file = N
 
 
 }
-
-
-
-
-#' Parse Processor
-#'
-#'
-#' @param this_dir Fetch directory to parse.
-#' @param parseR Function that will be used for parseing.
-#' @param n_threads Number of threads to use for parseing.
-#' @param log_file Log file name. If null, defaults to stdout().
-#' @param n chunk size
-#' @return URLS beginning with (http/https), followed by ://www..
-#' @export
-#'
-
-parseR_2 <- function(this_dir=NULL,
-                     parser=parse_content,
-                     log_file = NULL){
-
-
-  process_links<-function(x){
-    if(is.null((x))){return()}
-    if(is.null((x$links))){return()}
-    if(NROW((x$links))==0){return()}
-    if(is.null(x$port)) x$port<-""
-    x$port[is.na(x$port)]<-''
-    this_depth<-0
-    if(!is.null(x$depth)) this_depth<-x$depth
-    links<-xml2::url_parse(unlist(x$links))
-    links$url <- paste0(links$scheme,"://",links$server,links$path)
-    links$url <- ifelse(links$query !="", paste0(links$url,'?',links$query),links$url)
-    links$url <- gsub('\\?$|/$','',links$url)
-    links$crawled<-0
-    links$is_seed<-0
-    links$next_crawl<-as.numeric(Sys.Date())
-    links$depth<-this_depth + 1
-    links$crawl_int<-1
-    return(links)
-  }
-
-
-  ## big try catch for passing back to crawlR
-  tryCatch({
-
-    ## set logging
-    log_con<-crawlR:::set_log_file(log_file)
-
-    ## file to place links
-    fh_links<-suppressWarnings(gzfile(paste0(this_dir,'fetched_links.json.gz'),open='a'))
-
-    ## read crawled data
-    chunk_con = suppressWarnings(gzfile(paste0(this_dir,'fetched.json.gz'),open='rb'))
-
-    pg<-list()
-    tot <- 0
-    while ( TRUE ) {
-
-      ## since file could be huge, rather than read the
-      ## entire file into memory, it is read line by line
-      f_chunk<-suppressWarnings(readLines(chunk_con,n=1))
-      tot<-tot + length(f_chunk)
-      if (length(f_chunk) == 0 ){break;}
-
-      ## le' counter
-      if(tot %% 1000 == 0){writeLines(paste('parseR: Total Done:',tot), con = log_con)}
-
-      ## sometimes reads fail
-      pg[[1]] <- tryCatch({jsonlite::fromJSON(f_chunk)$ename}, error = function(e) e )
-
-      if(inherits(pg[[1]], "error")) next
-      if(is.null(pg[[1]])) next
-      if(sum(is.na(pg[[1]]))==NROW(pg[[1]])) next
-      if(is.null(pg[[1]]$url)) next
-      if(is.null(pg[[1]]$content))next
-      if(is.na(pg[[1]]$content[1]))next
-
-      output<- tryCatch({
-         ## headers same for any type
-         pg[[1]]$headers<-curl::parse_headers_list(pg[[1]]$headers)
-
-         ## get type for further processing
-         type1 <- gsub("^\\s+|\\s+$","",strsplit(pg[[1]]$type,";")[[1]][1])
-         type2 <- gsub("^\\s+|\\s+$","",strsplit(type1,"/")[[1]][1])
-
-         ## if text/html
-         if(type2=='text'){
-           if(length(pg[[1]]$content)>0){
-             processed_links<-process_links(list(url=pg[[1]]$url,links=pg[[1]]$content$links,depth=pg[[1]]$depth))
-             writeLines(jsonlite::toJSON(processed_links), con = fh_links )
-           }
-         }else if(type1=='application/pdf'| type2=='pdf'){
-           next
-           # fname <- pg[[1]]$content
-           # info <- pdftools::pdf_info(fname)
-           #
-           # ## build content to match html content type
-           # pg[[1]]$content <- list()
-           #
-           # ## if info exists add to content
-           # if(!is.null(info)){
-           #   pg[[1]]$modified <- ifelse(!is.null(info$modified),info$modified,NA)
-           #   if(!is.null(info$keys)){
-           #     pg[[1]]$content$title <- ifelse(!is.null(info$keys$Title),info$keys$Title,pg[[1]]$url)
-           #   }
-           # }
-           ## actual content of pdf
-           pg[[1]]$content$content <- pdftools::pdf_text(fname)
-         }
-       }, error = function(e){
-         writeLines(paste('parseR: Recoverable Error',e), con=log_con)
-       })
-
-    }## End of while loop.
-
-  }, error = function(e){
-
-    writeLines(paste('parseR:',e), con=log_con)
-    e<-paste('parseR:',e)
-    class(e) <- 'error'
-
-  }, finally = {
-
-    close(chunk_con)
-    close(fh_links)
-    if(class(log_con)[1]=="file") close(log_con)
-
-  })
-}
-
-
 
 
 

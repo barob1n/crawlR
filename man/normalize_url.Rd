@@ -13,5 +13,7 @@ normalize_url(url)
 URLS beginning with (http/https), followed by ://www..
 }
 \description{
-Normalize url's
+Converts url's to lowercase, removes any trailing back slashes,
+appends 'http://' to front if missing, and removes everything
+following #-marks.
 }

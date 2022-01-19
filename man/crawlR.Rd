@@ -2,7 +2,7 @@
 % Please edit documentation in R/crawlR.R
 \name{crawlR}
 \alias{crawlR}
-\title{Crawl and Parse Web Pages}
+\title{CrawlR - Async Web Crawler for R}
 \usage{
 crawlR(
   seeds = NULL,
@@ -22,15 +22,14 @@ crawlR(
   queue_scl = 1,
   topN = NULL,
   max_urls_per_host = 10,
-  n_threads = 1,
   parser = crawlR:::parse_content,
   score_func = NULL,
+  min_score = 0,
   log_file = NULL,
   seeds_only = F,
   crawl_int = NULL,
   readability_content = F,
-  overwrite = F,
-  min_score = 0
+  overwrite = F
 )
 }
 \arguments{
@@ -72,11 +71,11 @@ overall depth so that no link with depth higher than this value will be selected
 
 \item{max_urls_per_host}{Maximum url's from each host when creating fetch list for each link depth.}
 
-\item{n_threads}{(depricated) Only applies to parsing.}
-
-\item{parser}{Parsing function to use.}
+\item{parser}{Parsing function for page content to use.}
 
 \item{score_func}{URL Scoring Function.}
+
+\item{min_score}{minimum score during generate for urls}
 
 \item{log_file}{Name of log file. If null, writes to stdout().}
 
@@ -85,55 +84,26 @@ overall depth so that no link with depth higher than this value will be selected
 \item{readability_content}{process content using readability}
 
 \item{overwrite}{If true, data for url will be overwritten in linkDB.}
-
-\item{min_score}{minimum score during generate for urls}
 }
 \description{
-Utilizes the curl package to crawl through a
+Batch based web-crawler utilizing the asynchronous features of R's curl package to crawl through a
 list of user supplied websites to given depth.
-Unlesss overriden, crawlR observes robots.txt.
+
+Each iteration consists of injecting seeds (if given), generating a fetch list, fetching pages
+to disk, parsing pages, and then finally updating the links in the crawlDB.
+
+After initial seeding, subsequent iterations query the crawlDB to generate a fetch list.  Additional
+seeds can be added at any time. Re-seeding with previously given seeds will re-crawl those seeds.
 }
 \details{
-After each iteration of crawling, the crawled
-pages are read from disk, parsed, and writen
-back to disk. The read/parse phase is done in
-parrallel using the future package
+Each phase of the process is contained within a function of the \emph{crawlR} package:
+\enumerate{
+\item \emph{injectR} - Inject seeds into crawlDB.
+\item \emph{generateR} - Generate fetch list from crawlDB.
+\item \emph{fetchR} - Fetch links in fetch list.
+\item \emph{parseR} - Parse fetched pages.
+\item \emph{updateR} - Update crawlDB.
 }
-\examples{
 
-
-## SETUP --------------------------------------------------------------------
-
-library(crawlR)
-
-work_dir <- '/usr/local/solr/crawl/'
-max_concurr = 50         # max concurrent connections - total
-max_host = 1             # max concurrent connections - per host
-crawl_delay = 30         # delay in seconds between sucessvie requests same host
-timeout = Inf            # total time for crawling ALL urls
-
-
-# Create Seed List
-seeds <- c("https://www.cnn.com", "https://www.npr.org")
-
-
-# Crawl all seeds on 1st iteration, but only follow links
-library(crawlR)
-# Run Crawler.
-crawlR(seeds = seeds,
-       work_dir="E:/crawl/",
-       out_dir = "E:/crawl/news/",
-       max_concurr = 50,
-       max_host = 5,
-       timeout = Inf,
-       external_site = F,
-       crawl_delay=5,
-       max_size = 4e6,
-       regExOut = NULL,
-       regExIn = NULL,
-       depth = 1,
-       queue_scl = 1,
-       topN=10,
-       max_urls_per_host = 10,
-       parser = crawlR::parse_content)
+These can be called individually or using the all-in-one \emph{crawlR} function.
 }

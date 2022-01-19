@@ -36,15 +36,14 @@ crawlR(
     queue_scl = 1,
     topN=NULL,
     max_urls_per_host = 10,
-    n_threads=1,
     parser = crawlR:::parse_content,
     score_func=NULL,
+    min_score=0.0,
     log_file = NULL,
     seeds_only = F,
     crawl_int=NULL,
     readability_content=F,
-    overwrite = F,
-    min_score=0.0)
+    overwrite = F)
 ```
 
 
@@ -69,14 +68,14 @@ Argument      |Description
 ```queue_scl```     |     (Deprecated) max_concur * queue_scl gives que.
 ```topN```     |     Top num links to fetch per per link depth iteration.
 ```max_urls_per_host```     |     Maximum URL's from each host when creating fetch list for each link depth.
-```n_threads```     |   (depricated) Only applies to parsing.
 ```parser```     |     Parsing function to use.
 ```score_func```	|	URL Scoring Function.
+```min_score```	|	Minimum score during generate for urls.
 ```log_file```	|	Name of log file. If null, writes to stdout().
 ```seeds_only```	|	If true, only seeds will be pulled from linkDB.
 ```readability_content```	|	Process content using readability python module.
 ```overwrite```	|	If true, data for url will be overwritten in crawlDB.
-```min_score```	|	Minimum score during generate for urls.
+
 
 ## Details
 
@@ -89,78 +88,74 @@ Argument      |Description
 ## Examples
 
 ```r 
+ devtools::install_github("barob1n/crawlR")
  
- # Create Seed List
+ ## Create Seed List
  seeds <- c("https://www.cnn.com", "https://www.npr.org")
  
-
- # Crawl all seeds on 1st iteration, but only follow links
+ ## Creates crawlDB, inject seeds, and crawl 
  
- # Run Crawler.
  crawlR(seeds = seeds,
- work_dir="~/crawl",
- out_dir = "~/crawl/news/",
- max_concurr = 50,
- max_host = 1,
- timeout = Inf,
- external_site = F,
- sitemaps = F,
- crawl_delay=10,
- max_size = 4e6,
- regExOut = NULL,
- regExIn = NULL,
- depth = 2,
- queue_scl = 1,
- topN=10000,
- max_urls_per_host = 10,
- parser = crawler::parse_content)
+  work_dir="~/crawl",
+  out_dir = "~/crawl/news/",
+  max_concurr = 50,  
+  max_host = 5,
+  timeout = Inf,
+  external_site = F,
+  crawl_delay=1,
+  max_size = 4e6,
+  regExOut = NULL,
+  regExIn = NULL,
+  depth = 1,
+  queue_scl = 1,
+  topN=10,
+  max_urls_per_host = 10,
+  parser = crawlR::parse_content)
+  
  
- 
-## Run again with URL filters.
+## Crawl again, this time using filters.
  
 filter_in=paste0("police,shooting,gun control")
 filter_out=paste0("sports,weather")
  
- crawlR(seeds = NULL,
- work_dir= "~/crawl/",
- out_dir = "~/crawl/news/",
- max_concurr = 100,
- max_host = 1,
- timeout = Inf,
- external_site = F,
- sitemaps = F,
- crawl_delay=10,
- max_size = 4e6,
- regExOut = filter_in,
- regExIn = filter_out,
- depth = 2,
- queue_scl = 1,
- topN=10000,
- max_urls_per_host = 10,
- parser = crawler::parse_content)
+ crawlR(seeds = NULL,       # no seeds - will query crawlDB
+  work_dir= "~/crawl/",
+  out_dir = "~/crawl/news/",
+  max_concurr = 50,
+  max_host = 5,
+  timeout = Inf,
+  external_site = F,
+  crawl_delay=1,
+  max_size = 4e6,
+  regExOut = filter_out,    # filter out these
+  regExIn = filter_in,      # url's must have these 
+  depth = 1,
+  queue_scl = 1,
+  topN=10,
+  max_urls_per_host = 10,
+  parser = crawlR::parse_content)
+  
  
- 
- # Run a third time, providing some new/additional seeds.
+ ## Run a third time, providing some new/additional seeds.
  
  new_seeds <- c("https://ge.com", "https://www.ford.com")
  
- crawlR(seeds = new_seeds,
+ crawlR(seeds = new_seeds,  # seeds will be added to crawlDB 
  work_dir= "~/crawl/",
  out_dir = "~/crawl/auto/",
- max_concurr = 100,
- max_host = 1,
- timeout = Inf,
- external_site = F,
- sitemaps = F,
- crawl_delay=10,
- max_size = 4e6,
- regExOut = NULL,
- regExIn = NULL,
- depth = 2,
- queue_scl = 1,
- topN=10000,
- max_urls_per_host = 10,
- parser = crawler::parse_content)
+ max_concurr = 50,
+  max_host = 5,
+  timeout = Inf,
+  external_site = F,
+  crawl_delay=1,
+  max_size = 4e6,
+  regExOut = filter_out,
+  regExIn = filter_in,    
+  depth = 1,
+  queue_scl = 1,
+  topN=10,
+  max_urls_per_host = 10,
+  parser = crawlR::parse_content)
  
  
  

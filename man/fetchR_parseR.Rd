@@ -12,11 +12,9 @@ fetchR_parseR(
   max_concurr = NULL,
   max_host = NULL,
   timeout = Inf,
-  timeout_request = timeout_request,
+  timeout_request = NULL,
   queue_scl = 1,
   comments = "",
-  save_to_disk = T,
-  return = F,
   log_file = NULL,
   readability_content = F,
   parser = crawlR::parse_content_fetch
@@ -42,10 +40,6 @@ fetchR_parseR(
 \item{queue_scl}{Scaler}
 
 \item{comments}{Some comments to print while running.}
-
-\item{save_to_disk}{Save output to disk or not.}
-
-\item{return}{Return output or not.}
 
 \item{log_file}{Name of log file. If null, writes to stdout().}
 

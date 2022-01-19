@@ -4,28 +4,19 @@
 \alias{parseR}
 \title{Parse Processor}
 \usage{
-parseR(
-  this_dir = NULL,
-  parser = parse_content,
-  n_threads = 4,
-  log_file = NULL,
-  n = 4000
-)
+parseR(this_dir = NULL, parser = parse_content, log_file = NULL)
 }
 \arguments{
 \item{this_dir}{Fetch directory to parse.}
 
-\item{n_threads}{Number of threads to use for parseing.}
+\item{parser}{Function that will be used for parseing.}
 
 \item{log_file}{Log file name. If null, defaults to stdout().}
-
-\item{n}{chunk size}
-
-\item{parseR}{Function that will be used for parseing.}
 }
 \value{
 URLS beginning with (http/https), followed by ://www..
 }
 \description{
-Parse Processor
+Handles parseing of extracted links and page content.  Page content
+is parsed using 'parser' function passed in as variable.
 }
