@@ -188,10 +188,10 @@ crawlR <- function(
 
         this_dir<-paste0(find_last_dir(out_dir=gsub('/$','',out_dir)),"/")
 
-        if(!file.exists(paste0(this_dir,'fetch_list.rda'))){
-          write_log(paste('crawlR: Nothing to fetch.\n'), log_file)
-          break
-        }
+        # if(!file.exists(paste0(this_dir,'fetch_list.rda'))){
+        #   write_log(paste('crawlR: Nothing to fetch.\n'), log_file)
+        #   break
+        # }
 
         write_log(paste('crawlR: Starting Fetcher -', Sys.time()), log_file)
 

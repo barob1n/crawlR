@@ -19,7 +19,6 @@
 #' @param return Return output or not.
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @return None.
-#' @import dplyr
 #' @export
 #'
 

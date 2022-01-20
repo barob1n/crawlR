@@ -20,7 +20,6 @@
 #' @param readability_content T
 #' @param parser parse func
 #' @return None.
-#' @import dplyr
 #' @export
 #'
 
@@ -39,10 +38,9 @@ fetchR_parseR<- function(
    readability_content=F,
    parser=crawlR::parse_content_fetch){
 
-
+  log_con<-set_log_file(log_file)
+  
   tryCatch({
-
-    log_con<-set_log_file(log_file)
 
     fetch_list_env    <- new.env()
 
