@@ -94,7 +94,7 @@ devtools::install_github("barob1n/crawlR")
 ## Create Seed List
 seeds <- c("https://www.cnn.com", "https://www.npr.org")
  
-## Creates crawlDB, inject seeds, and crawl 
+## Create crawlDB, inject seeds, and crawl.
  
 crawlR(seeds = seeds,
   work_dir="~/crawl",
