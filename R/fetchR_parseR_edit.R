@@ -1,11 +1,10 @@
 #' Fetch a List of Url's.
 #'
-#' Based on the curl package (a wrapper for libcurl). The fetch list
-#' of urls is organized into batches, with each batch containing one
-#' url from one host. Provides a convienent way to avoid
-#' hitting a server too often.  A delay also kicks in if a host is
-#' being queried too quickly.
+#' @description
+#' Fetches list of URL's created by the generateR() function.
 #'
+#' @md
+#' 
 #' @param out_dir (Required) Current output directory.
 #' @param work_dir (Required) Current working directory.
 #' @param fetch_list (Required) Created by generateR.R.
@@ -19,7 +18,6 @@
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @param readability_content T
 #' @param parser parse func
-#' @return None.
 #' @export
 #'
 
@@ -42,10 +40,10 @@ fetchR_parseR_edit<- function(
   
   tryCatch({
 
-    fetch_list_env    <- new.env()
+    fetch_list_env <- new.env()
 
     # Fetched page data stored here.
-    fetched_pg    <- new.env();
+    fetched_pg <- new.env();
 
     json_out <- gzfile(paste0(out_dir,'fetched.json.gz'),open="a")
 
@@ -159,8 +157,6 @@ fetchR_parseR_edit<- function(
       }
     }
 
-    ave_rate=3
-
     ## Main Fetching function - based on crawl example in curl package.
     do_fetch <- function(url,depth,out_dir, json_out){
       out_dir <- out_dir
@@ -177,21 +173,13 @@ fetchR_parseR_edit<- function(
           tryCatch({
             res$hash_name <- paste0('crawlR_', openssl::md5(res$url), collapse='')
             res$headers <- rawToChar(res$headers)
-            type <- strsplit(strsplit(res$type,';')[[1]] ,split='/')[[1]]
             res$url<-url
             res$depth<-depth
             ## check for valid type
-            if(is.na(type[1])) type<-c("","")
-            if(type[1]=='text'){
+            if(grepl('text',tolower(res$type))){
               res$content<-rawToChar(res$content)
               if(res$url!="") fetched_pg[[res$url]] <-res
             }else if(type[2]=='pdf'){
-              # fname <- paste0(out_dir, res$hash_name, ".pdf", collapse = "")
-              # fh <- file(fname, open = "wb")
-              # writeBin((res$content), con = fh)
-              # close(fh)
-              # res$content<-fname
-              # fetched_pg[[res$url]] <-res
             }
           },error = function(e) {
             writeLines(paste('fetchR:', url,'-',substr(e,1,50)),con = log_con)
@@ -254,7 +242,7 @@ fetchR_parseR_edit<- function(
       fetch_db,paste("select count(distinct batch) from fetch_list"))
     
     ## initialize a batch of urls
-    load_batch(fetch_db,batch,offset,limit)
+    load_batch(fetch_db,batch=1,offset=0,queue$queue_size)
 
     
     load_batch <- function(batch,queue,fetch_list){

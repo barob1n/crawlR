@@ -1,14 +1,16 @@
 #' CrawlR - Async Web Crawler for R
 #'
 #' @description
-#' Batch based web-crawler utilizing the asynchronous features of R's curl package to crawl through a
-#' list of user supplied websites to given depth.
+#' Batch based web-crawler utilizing the asynchronous features of R's curl 
+#' package to crawl through a list of user supplied websites to given depth.
 #'
-#' Each iteration consists of injecting seeds (if given), generating a fetch list, fetching pages
-#' to disk, parsing pages, and then finally updating the links in the crawlDB.
+#' Each iteration consists of injecting seeds (if given), generating a 
+#' fetch list, fetching pages to disk, parsing pages, and then updates
+#' the links in the crawlDB.
 #'
-#' After initial seeding, subsequent iterations query the crawlDB to generate a fetch list.  Additional
-#' seeds can be added at any time. Re-seeding with previously given seeds will re-crawl those seeds.
+#' After initial seeding, subsequent iterations query the crawlDB to generate a 
+#' fetch list.  Additional seeds can be added at any time. Re-seeding with 
+#' previously given seeds will re-crawl those seeds.
 #'
 #' @details
 #' Each phase of the process is contained within a function of the *crawlR* package:
@@ -57,8 +59,7 @@
 #' @export
 #'
 #' @examples
-#'
-#'
+#' 
 #' ## SETUP --------------------------------------------------------------------
 #'
 #' devtools::install_github('barob1n/crawlR)
@@ -89,8 +90,6 @@
 #'        parser = crawlR::parse_content)
 #'
 
-
-
 crawlR <- function(
     seeds = NULL,
     work_dir=NULL,
@@ -114,7 +113,6 @@ crawlR <- function(
     min_score=0.0,
     log_file = NULL,
     seeds_only = F,
-    crawl_int=NULL,
     readability_content=F,
     overwrite = F){
 
@@ -140,7 +138,7 @@ crawlR <- function(
       ## log status and parameters
       write_log(paste0('---------------------------------------------------------'), log_file)
       write_log(paste0('---------------------------------------------------------'), log_file)
-      write_log(paste0('crawlR: ',Sys.time(),' - Entering Crawler'), log_file)
+      write_log(paste0('crawlR: ', Sys.time(),' - Entering Crawler'), log_file)
       write_log(paste0('crawlR: Work Directory - ',work_dir), log_file)
       write_log(paste0('crawlR: Out Directory - ',out_dir), log_file)
       write_log(paste0('crawlR: Parameters:'), log_file)
@@ -247,7 +245,8 @@ crawlR <- function(
       stop(paste(val))
     },
     finally = {
-    })
+    }
+  )
 
 }
 

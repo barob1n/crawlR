@@ -27,7 +27,6 @@ crawlR(
   min_score = 0,
   log_file = NULL,
   seeds_only = F,
-  crawl_int = NULL,
   readability_content = F,
   overwrite = F
 )
@@ -86,14 +85,16 @@ overall depth so that no link with depth higher than this value will be selected
 \item{overwrite}{If true, data for url will be overwritten in linkDB.}
 }
 \description{
-Batch based web-crawler utilizing the asynchronous features of R's curl package to crawl through a
-list of user supplied websites to given depth.
+Batch based web-crawler utilizing the asynchronous features of R's curl
+package to crawl through a list of user supplied websites to given depth.
 
-Each iteration consists of injecting seeds (if given), generating a fetch list, fetching pages
-to disk, parsing pages, and then finally updating the links in the crawlDB.
+Each iteration consists of injecting seeds (if given), generating a
+fetch list, fetching pages to disk, parsing pages, and then updates
+the links in the crawlDB.
 
-After initial seeding, subsequent iterations query the crawlDB to generate a fetch list.  Additional
-seeds can be added at any time. Re-seeding with previously given seeds will re-crawl those seeds.
+After initial seeding, subsequent iterations query the crawlDB to generate a
+fetch list.  Additional seeds can be added at any time. Re-seeding with
+previously given seeds will re-crawl those seeds.
 }
 \details{
 Each phase of the process is contained within a function of the \emph{crawlR} package:

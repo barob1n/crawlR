@@ -45,9 +45,6 @@ generateR(
 
 \item{min_score}{minimum score for url}
 }
-\value{
-Returns character vector of links, or error message.
-}
 \description{
 Queries the crawlDB for urls matching the given parameters.
 }

@@ -15,7 +15,6 @@
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @param seeds_only gen only seeds
 #' @param min_score minimum score for url
-#' @return Returns character vector of links, or error message.
 #' @export
 #'
 generateR <- function(out_dir=NULL,
