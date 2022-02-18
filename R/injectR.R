@@ -31,7 +31,7 @@ injectR <- function(out_dir = NULL,
     ## connect to crawlDB
     crawlDB <- DBI::dbConnect(RSQLite::SQLite(), paste0(work_dir,"crawlDB.sqlite"))
 
-    ## clean up seeds
+    ## clean up seeds - should be made a function in helpers.R
     seeds<-normalize_url(seeds)
     ip <- gsub('[0-9.]','',seeds)
     seeds <- seeds[ip!=""]
@@ -47,6 +47,7 @@ injectR <- function(out_dir = NULL,
     seeds$score<-0
     seeds<-seeds[!duplicated(seeds$url),]
 
+    ## column order for database tables
     col_order <- c(
       'scheme','server','port','user','path','query',
       'fragment','crawled','next_crawl','url',

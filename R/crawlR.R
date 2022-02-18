@@ -89,6 +89,10 @@
 #'        max_urls_per_host = 10,
 #'        parser = crawlR::parse_content)
 #'
+<<<<<<< Updated upstream
+=======
+#'
+>>>>>>> Stashed changes
 
 crawlR <- function(
     seeds = NULL,
@@ -116,10 +120,8 @@ crawlR <- function(
     readability_content=F,
     overwrite = F){
 
-
     tryCatch({
       val<-'Error message.'
-
       if(is.null(work_dir)) stop('Output directory not provided.')
       if(is.null(out_dir)) out_dir<-work_dir
       if(!(dir.exists(work_dir))) dir.create(work_dir)
@@ -136,14 +138,20 @@ crawlR <- function(
       }
 
       ## log status and parameters
+<<<<<<< Updated upstream
       write_log(paste0('---------------------------------------------------------'), log_file)
       write_log(paste0('---------------------------------------------------------'), log_file)
       write_log(paste0('crawlR: ', Sys.time(),' - Entering Crawler'), log_file)
+=======
+      write_log(paste0(rep('-',80),collapse=''), log_file)
+      write_log(paste0(rep('-',80),collapse=''), log_file)
+      write_log(paste0('crawlR: ',Sys.time(),' - Entering Crawler'), log_file)
+>>>>>>> Stashed changes
       write_log(paste0('crawlR: Work Directory - ',work_dir), log_file)
       write_log(paste0('crawlR: Out Directory - ',out_dir), log_file)
       write_log(paste0('crawlR: Parameters:'), log_file)
-      write_log(paste0('---------------------------------------------------------'), log_file)
-      write_log(paste0('---------------------------------------------------------'), log_file)
+      write_log(paste0(rep('-',80),collapse=''), log_file)
+      write_log(paste0(rep('-',80),collapse=''), log_file)
 
       dir_check <- c(list.files(work_dir),"")
       if(is.null(seeds) & !file.exists(paste0(work_dir,'crawlDB.sqlite'))) stop('Seed list not provided.')
@@ -151,21 +159,23 @@ crawlR <- function(
       ## Inject Seed list if provided
       if(!is.null(seeds)){
         write_log(paste('crawlR: Injecting',length(seeds), 'seed URLs -', Sys.time()), log_file)
-        val<-injectR(out_dir=out_dir,work_dir=work_dir,seeds=seeds,log_file = log_file)
+        val <- injectR(out_dir=out_dir,work_dir=work_dir,seeds=seeds,log_file = log_file)
         if(class(val)=='error') stop(paste(val))
       }
 
-      ## array of start and end times for depth levels
-      st_arr<-rep(NA,depth)
-      et_arr<-rep(NA,depth)
-      for(lvl in 1:depth){
+      ## array of start and end times for depth level loop
+      st_arr <- rep(NA,depth)
+      et_arr <- rep(NA,depth)
 
-        ## start time
-        st_arr[lvl]<-as.numeric(Sys.time())
+      for(lvl in 1:depth){
 
         write_log(paste('crawlR:  Depth - ',lvl,'of', depth), log_file)
         write_log(paste('crawlR: Generating Fetch List -', Sys.time()), log_file)
 
+        ## start time for loop
+        st_arr[lvl]<-as.numeric(Sys.time())
+
+        ## call generateR to generate a fetch list
         val<-generateR(out_dir=out_dir,
                        work_dir=work_dir,
                        regExOut=regExOut,
@@ -184,7 +194,8 @@ crawlR <- function(
 
         write_log(paste('crawlR: Finished Fetch List -', Sys.time()), log_file)
 
-        this_dir<-paste0(find_last_dir(out_dir=gsub('/$','',out_dir)),"/")
+        ## this_dir - directory for current crawl iteration
+        this_dir <- paste0(find_last_dir(out_dir=gsub('/$','',out_dir)),"/")
 
         # if(!file.exists(paste0(this_dir,'fetch_list.rda'))){
         #   write_log(paste('crawlR: Nothing to fetch.\n'), log_file)
@@ -193,6 +204,7 @@ crawlR <- function(
 
         write_log(paste('crawlR: Starting Fetcher -', Sys.time()), log_file)
 
+        ## fetchR_parseR - fetch links output by generateR
         val<-fetchR_parseR(out_dir=this_dir,
                     work_dir=work_dir,
                     fetch_list=NULL,
@@ -212,12 +224,14 @@ crawlR <- function(
         write_log(paste('crawlR: Finished Fetching -', Sys.time()), log_file)
         write_log(paste('crawlR: Starting Parser -',Sys.time()), log_file)
 
-        val <- parseR_2(this_dir = this_dir, parser=parser,log_file = log_file)
+        ## parseR - parse data from fetchR
+        val <- parseR(this_dir = this_dir, parser=parser,log_file = log_file)
         if(class(val)=='error') stop(paste(val))
 
         write_log(paste('crawlR: Finihsed Parsing -',Sys.time()), log_file)
         write_log(paste('crawlR: Starting Updater -', Sys.time()), log_file)
 
+        ## update crawlDB with output from parseR
         val<-updateR(work_dir=work_dir,
                      out_dir=this_dir,
                      log_file = log_file,
@@ -229,16 +243,17 @@ crawlR <- function(
         write_log(paste('crawlR: Finished Updating -', Sys.time()), log_file)
         write_log(paste('crawlR: End of Depth Level:',lvl,'-', Sys.time()), log_file)
 
-        ## end time
+        ## end time for loop
         et_arr[lvl] <- as.numeric(Sys.time())
+
         write_log(paste('crawlR: Time for depth -',(et_arr[lvl]-st_arr[lvl]) ), log_file)
       }
 
       ## log status
       write_log(paste('crawlR: DONE -', Sys.time()), log_file)
       write_log(paste('crawlR: Average Time per Depth -',mean(et_arr-st_arr) ), log_file)
-      write_log(paste0('---------------------------------------------------------'), log_file)
-      write_log(paste0('---------------------------------------------------------'), log_file)
+      write_log(paste0(rep('-',80),collapse=''), log_file)
+      write_log(paste0(rep('-',80),collapse=''), log_file)
     },
     error = function(e){
       write_log(paste('crawlR: ',e), log_file)

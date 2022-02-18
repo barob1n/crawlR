@@ -40,7 +40,7 @@ updateR <- function(work_dir = NULL,
 
     load(paste0(out_dir,"fetch_list.rda"))
 
-    ## remove the already fetech seeds
+    ## remove the already fetched seeds
     fetch_list$url<-gsub('/$','',fetch_list$url)
 
     crawlDB <- DBI::dbConnect(RSQLite::SQLite(), paste0(work_dir,"crawlDB.sqlite"))

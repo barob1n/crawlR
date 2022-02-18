@@ -350,7 +350,8 @@ grep_meta<-'content-language|description|keywords|twitter:card|twitter:title|twi
     # })
   return(vals)
 
-  }, error = function(e){return(NA);print(e)} )
+  },
+  error = function(e){return(NA);print(e)} )
 
 }
 
@@ -376,6 +377,11 @@ parse_content <- function(res, readability, readability_content=F, map_meta=NULL
   filter_tags <- function(tag){
     tag_docs <- rvest::html_nodes(doc, tag ) %>% rvest::html_text()
     return(tag_docs)
+  }
+
+  filter_tags_xml2 <- function(doc,tag){
+    tags<-xml2::xml2_find_all(doc,paste0('//',tag))
+    xml2::xml_text(tags)
   }
 
   map_meta <- list()
@@ -408,10 +414,13 @@ parse_content <- function(res, readability, readability_content=F, map_meta=NULL
     vals[['content']] <- filter_tags("body")
     vals[['h1']] <- filter_tags("h1")
     vals$meta <- parse_meta(doc,map_meta=map_meta)
-    vals$links <- doc %>% rvest::html_nodes('a') %>% rvest::html_attr('href')
+    vals$links <- xml2::xml_find_all(doc,'//a')
+    vals$links <- xml2::xml_attr(vals$links,'href')
     vals$links <- xml2:::url_absolute(vals$link ,res$url)
-    vals$links <- grep("^https://|^http://", vals$links, value = TRUE)
-    vals$links <- sub("#.*", "", vals$links)
+    #vals$links <- doc %>% rvest::html_nodes('a') %>% rvest::html_attr('href')
+    #vals$links <- xml2:::url_absolute(vals$link ,res$url)
+    #vals$links <- grep("^https://|^http://", vals$links, value = TRUE)
+    #vals$links <- sub("#.*", "", vals$links)
     return(vals)
 
   }, error = function(e){return(NA)} )
@@ -436,6 +445,8 @@ parseR <- function(this_dir=NULL,
                      parser=parse_content,
                      log_file = NULL){
 
+
+  ## helper function to handle extracted links. could be moved to helpers.R
   process_links<-function(x){
     if(is.null((x))){return()}
     if(is.null((x$links))){return()}
@@ -459,20 +470,18 @@ parseR <- function(this_dir=NULL,
   ## set logging
   log_con<-crawlR:::set_log_file(log_file)
 
-  ## big try catch for passing back to crawlR
   tryCatch({
 
-    ## file to place links
+    ## file handler for outputing extracted links
     fh_links<-suppressWarnings(gzfile(paste0(this_dir,'fetched_links.json.gz'),open='a'))
 
-    ## read crawled data
+    ## hile handler for crawled data
     chunk_con = suppressWarnings(gzfile(paste0(this_dir,'fetched.json.gz'),open='rb'))
 
     tot <- 0
     while ( TRUE ) {
 
-      ## since file could be huge, rather than read the
-      ## entire file into memory, it is read line by line
+      ## read cread crawled data in chunks to conserve memory
       f_chunk<-suppressWarnings(readLines(chunk_con,n=1))
 
       ## track number of lines read
@@ -481,13 +490,13 @@ parseR <- function(this_dir=NULL,
       ## break if no more data
       if (NROW(f_chunk) == 0 ){break;}
 
-      ## le' counter
+      ## le' counter for lines read
       if(tot %% 1000 == 0){writeLines(paste('parseR: Total Done:',tot), con = log_con)}
 
       ## sometimes parse fails
       pg <- tryCatch({jsonlite::fromJSON(f_chunk)$ename}, error = function(e) e )
 
-      ## must parse, must have url, and must have content
+      ## must be parseable, must have url, and must have content, otherwise skip
       if(inherits(pg, "error")) next
       if(is.null(pg)) next
       if(sum(is.na(pg))==NROW(pg)) next
@@ -495,7 +504,7 @@ parseR <- function(this_dir=NULL,
       if(is.na(pg$url[1]) | is.na(pg$content[1]))next
 
       output<- tryCatch({
-         ## headers same for any type
+
          pg$headers<-curl::parse_headers_list(pg$headers)
 
          ## if text/html
