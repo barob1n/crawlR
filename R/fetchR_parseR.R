@@ -1,11 +1,5 @@
 #' Fetch a List of Url's.
 #'
-#' Based on the curl package (a wrapper for libcurl). The fetch list
-#' of urls is organized into batches, with each batch containing one
-#' url from one host. Provides a convienent way to avoid
-#' hitting a server too often.  A delay also kicks in if a host is
-#' being queried too quickly.
-#'
 #' @param out_dir (Required) Current output directory.
 #' @param work_dir (Required) Current working directory.
 #' @param fetch_list (Required) Created by generateR.R.
@@ -39,7 +33,7 @@ fetchR_parseR<- function(
    parser=crawlR::parse_content_fetch){
 
   log_con<-set_log_file(log_file)
-  
+
   tryCatch({
 
     fetch_list_env    <- new.env()

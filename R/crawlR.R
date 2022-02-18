@@ -1,15 +1,15 @@
 #' CrawlR - Async Web Crawler for R
 #'
 #' @description
-#' Batch based web-crawler utilizing the asynchronous features of R's curl 
+#' Batch based web-crawler utilizing the asynchronous features of R's curl
 #' package to crawl through a list of user supplied websites to given depth.
 #'
-#' Each iteration consists of injecting seeds (if given), generating a 
+#' Each iteration consists of injecting seeds (if given), generating a
 #' fetch list, fetching pages to disk, parsing pages, and then updates
 #' the links in the crawlDB.
 #'
-#' After initial seeding, subsequent iterations query the crawlDB to generate a 
-#' fetch list.  Additional seeds can be added at any time. Re-seeding with 
+#' After initial seeding, subsequent iterations query the crawlDB to generate a
+#' fetch list.  Additional seeds can be added at any time. Re-seeding with
 #' previously given seeds will re-crawl those seeds.
 #'
 #' @details
@@ -59,7 +59,7 @@
 #' @export
 #'
 #' @examples
-#' 
+#'
 #' ## SETUP --------------------------------------------------------------------
 #'
 #' devtools::install_github('barob1n/crawlR)
@@ -89,10 +89,7 @@
 #'        max_urls_per_host = 10,
 #'        parser = crawlR::parse_content)
 #'
-<<<<<<< Updated upstream
-=======
-#'
->>>>>>> Stashed changes
+
 
 crawlR <- function(
     seeds = NULL,
@@ -138,15 +135,10 @@ crawlR <- function(
       }
 
       ## log status and parameters
-<<<<<<< Updated upstream
-      write_log(paste0('---------------------------------------------------------'), log_file)
-      write_log(paste0('---------------------------------------------------------'), log_file)
-      write_log(paste0('crawlR: ', Sys.time(),' - Entering Crawler'), log_file)
-=======
+
       write_log(paste0(rep('-',80),collapse=''), log_file)
       write_log(paste0(rep('-',80),collapse=''), log_file)
       write_log(paste0('crawlR: ',Sys.time(),' - Entering Crawler'), log_file)
->>>>>>> Stashed changes
       write_log(paste0('crawlR: Work Directory - ',work_dir), log_file)
       write_log(paste0('crawlR: Out Directory - ',out_dir), log_file)
       write_log(paste0('crawlR: Parameters:'), log_file)
