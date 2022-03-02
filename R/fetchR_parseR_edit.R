@@ -10,7 +10,7 @@
 #' @param fetch_list (Required) Created by generateR.R.
 #' @param crawl_delay time (in seconds) for calls to the same host.
 #' @param max_concurr Max. total concurrent connections open at any given time.
-#' @param max_host Max. total concurrent connections per host at any given time.
+#' @param max_concurr_host Max. total concurrent connections per host at any given time.
 #' @param timeout Total (all requests) timeout
 #' @param timeout_request per request timeout
 #' @param queue_scl Scaler
@@ -18,6 +18,9 @@
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @param readability_content T
 #' @param parser parse func
+#' @param writer placeholder to allow custom output functions
+#' @param status_print_interval num urls fetched between crawler status outputs
+#' @param curl_opts list of curl options
 #' @export
 #'
 
@@ -27,26 +30,27 @@ fetchR_parseR_edit<- function(
    fetch_list=NULL,
    crawl_delay=NULL,
    max_concurr=NULL,
-   max_host=NULL,
+   max_concurr_host=NULL,
    timeout=Inf,
    timeout_request=NULL,
    queue_scl=1,
    comments="",
    log_file=NULL,
    readability_content=F,
-   parser=crawlR::parse_content_fetch){
+   parser=crawlR::parse_content,
+   writer=NULL,
+   status_print_interval=500,
+   curl_opts=list(
+     "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36",
+     "Accept-Language" = "en;q=0.7",
+     "Connection" = "close",
+     "CURLOPT_DNS_CACHE_TIMEOUT" = "3600")){
 
   log_con<-set_log_file(log_file)
 
   tryCatch({
 
     if(is.null(out_dir)){stop(' no output directory provided.')}
-
-    # Fetched page data stored here.
-    fetched_pg <- new.env();
-
-    ## output for fetched data
-    json_out <- gzfile(paste0(out_dir,'fetched.json.gz'),open="a")
 
     ## python readability plugin
     if(readability_content){
@@ -55,158 +59,80 @@ fetchR_parseR_edit<- function(
       readability<-NULL
     }
 
-
-
-
-    ## writer for a batch of pages
-    write_batch<-function(fetched_pg=NULL){
-        if(is.null(fetched_pg)) return()
-        for(i in (names(fetched_pg))){
-          res<-fetched_pg[[paste(i)]]
-          type <- strsplit(strsplit(res$type,';')[[1]] ,split='/')[[1]]
-          if(is.na(type[1])) type<-c("","")
-          if(type[1]=='text'){
-            #res$content<-parse_content_fetch(res,readability,readability_content,map_meta)
-            res$content<-parser(res,readability,readability_content)
-          }
-          writeLines(jsonlite::toJSON(list(ename=res)), con=json_out)
-          fetched_pg[[paste(i)]]<-NULL
-          rm(list=paste(i),envir=fetched_pg)
-        }
-      }
-
-
-    print_cnt  <-0
-    tot_cnt    <-0
-
-    add_links_or_wait <- function( out_dir,json_out ){
-      print_cnt<<- print_cnt + 1
-      tot_cnt  <<- tot_cnt+1
-      tot_left <- queue$links_in_batch - queue$links_in_queue
-      pending  <- length(curl::multi_list(pool))
-
-      ## Do not add links until necessary
-      if((tot_cnt %% 500)==0){
-
-
-
-      }
-
-      ## adding links is expensive - only add when necessary
-      if(pending > max_concurr) return()
-
-      ## grab entire new batch when true
-      new_batch<-F
-
-      ## Load a new batch once current batch is done.
-      if(queue$links_in_queue == queue$links_in_batch) {
-        print_cnt <<-0
-        new_batch <-T
-
-        ## no more batches to do - write results and exit
-        if(queue$batch==queue$batch_count){
-          write_batch(fetched_pg)
-          return()
-        }
-
-        load_batch((queue$batch + 1), queue,fetch_list_env$df)
-
-        ## compute possible delay - delay if necessary
-        dt <- as.numeric(Sys.time()) - as.numeric(queue$init_time)
-        if(queue$delay[1] > dt){
-          writeLines(paste('fetchR: Waiting for Batch: ', queue$batch,'- URLs Pending: ', pending ), con = log_con)
-
-          Sys.sleep(queue$delay[1]  - dt)
-        }
-      }
-
-      ## Determin number of links to add and then add them to pool.
-      curr_cnt <- queue$links_in_queue
-      curr_rem <- queue$links_in_batch - curr_cnt
-
-      ## Grab new links
-      getThisMany <- max(max_concurr*(queue_scl*2) - length(curl::multi_list(pool)),1)
-      getThisMany <- min(curr_rem, getThisMany)
-      getThese <- (curr_cnt+1):(curr_cnt+getThisMany)
-
-      for(i in getThese){
-        queue$links_in_queue<- queue$links_in_queue+1
-        do_fetch(url=queue$urls[i],queue$depth[i], out_dir,json_out)
-      }
-
-      ## write out batch
-      write_batch(fetched_pg)
-
-      ## check if new batch is needed
-      if(new_batch){
-        print_time <<- Sys.time()
-        new_batch <- F
-      }
-    }
-
     ## Main Fetching function - based on crawl example in curl package.
-    do_fetch <- function(url,depth,out_dir){
-      out_dir <- out_dir
-      h <- curl::new_handle(CONNECTTIMEOUT = 10); #verbose = TRUE
-      curl::handle_setheaders(h,"Accept-Language" = "en;q=0.7")
-      curl::handle_setheaders(h,"Connection" = "close")
-      curl::handle_setheaders(h,"CURLOPT_DNS_CACHE_TIMEOUT" = paste(3600))
-      curl::handle_setheaders(h,"User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36")
-      curl::handle_setopt(h, .list=list(timeout=round(timeout_request)))
+    do_fetch <- function(url,depth,json_out){
+      h <- curl::new_handle(CONNECTTIMEOUT = 10)
+      curl::handle_setopt(h, .list=list(timeout=timeout_request)) ## per request timeout
+      curl::handle_setheaders(h,.list=curl_opts)
+       
       curl::curl_fetch_multi(url, handle = h, pool = pool, done = function(res){
+        
+        ## values used later in processing flow
+        res$url <- url
+        res$depth <- depth
+        res$hash_name <- paste0('crawlR_', openssl::md5(res$url), collapse='')
+        res$headers <- rawToChar(res$headers)
+        queue$tot_fetched <- queue$tot_fetched + 1
+        queue$tot_batch_fetched <- queue$tot_batch_fetched + 1
+        
+        ## if the request is good, process result otherwise set as null
         if(res$status >=200 & res$status<300){
-
-          ## URL's are not usually valid filenames-hashes of them are.
+          
+          ## hand off to content to supplied parser.  
           tryCatch({
-            res$hash_name <- paste0('crawlR_', openssl::md5(res$url), collapse='')
-            res$headers <- rawToChar(res$headers)
-            res$url<-url
-            res$depth<-depth
-            ## check for valid type
-            if(grepl('text',tolower(res$type))){
-              res$content<-rawToChar(res$content)
-              if(res$url!="") fetched_pg[[res$url]] <-res
-            }else if(type[2]=='pdf'){
-            }
-          },error = function(e) {
-            writeLines(paste('fetchR:', url,'-',substr(e,1,50)),con = log_con)
+            res$content <- parser(res,readability=NULL,readability_content=F)
+            writeLines(jsonlite::toJSON(list(ename=res)), con=json_out)
+          },
+          error = function(e) {
+            writeLines(paste('fetchR:', url,'-',substr(e,1,100)),con = log_con)
           })
 
         }else{
-          res$content <- NA
+          res$content <- NULL
         }
 
-        ## check if any url's in fetch list. if not, check if any batches left.
-        if(NROW(queue$fetch_list)>0){
-          ## add url to fetch and remove one from queue
-          do_fetch(url=queue$fetch_list[1,'url'],queue$depth[i], out_dir)
-          queue$fetch_list<-queue$fetch_list[-1,]
-        }else{
-          queue$batch<-queue$batch+1
-          if(queue$batch<queue$batch_count){
-            queue$fetch_list<-load_batch(fetch_db,batch=1)
-            ## include queue time
-
-          }
-        }
-
-        ## print current status.
-        if(queue$tot_fetch %% 500 ==0){
-          write_status(queue,log_con)
-        }
-
-        #add_links_or_wait(out_dir=out_dir,json_out)
-      },fail = function(errmsg){
+        update_queue(queue)
+      }, 
+      fail = function(errmsg){
         writeLines(paste('fetchR:',errmsg),con = log_con)
-        add_links_or_wait(out_dir=out_dir,json_out)
-        do_fetch(url=queue$fetch_list[1,'url'],queue$depth[i], out_dir,json_out)
-        queue$fetch_list<-queue$fetch_list[-1,]
+      
+        update_queue(queue)
       })
+    }
+    
+    
+   
+    ## update the queue
+    update_queue<-function(queue){
+      
+      ## update counters
+      queue$tot_fetched <- queue$tot_fetched + 1
+      queue$tot_batch_fetched <- queue$tot_batch_fetched + 1
+      
+      ## print current status.
+      if(queue$tot_fetched %% status_print_interval ==0){
+        write_status(queue,log_con)
+      }
+    
+      ## check if more url's in fetch list. if so, add one, else check if 
+      ## any url's are still pending in the pool.  if not queue another batch, 
+      ## else do nothing.
+      if(NROW(queue$fetch_list)>0){
+        do_fetch(url=queue$fetch_list,queue$depth[i], out_dir)
+        queue$fetch_list<-queue$fetch_list[-1]
+      }else if(sum(queue$status$pending) == 0 & queue$batch<queue$batch_count){
+        Sys.sleep(crawl_delay)
+        queue$tot_batch_fetched<-0
+        queue$batch_time <- Sys.time()
+        queue$fetch_list<-queue_batch(fetch_db,batch=queue$batch)
+      }else{
+        ## do nothing
+      }
     }
 
     ## print current crawler status
     write_status<-function(queue,log_con){
-      tot_left <- queue$links_in_batch -  print_cnt
+      tot_left <- queue$links_in_batch -  1
       thisDt   <- as.numeric(as.numeric(Sys.time())- as.numeric(queue$batch_time))
       writeLines(
         paste('\nBatch Num:', queue$batch, 'of', queue$batch_count,
@@ -216,26 +142,11 @@ fetchR_parseR_edit<- function(
               '\nPending in pool: ', length(curl::multi_list(pool)),
               '\nRun Time for Batch: ', round(thisDt), 'seconds',
               '\nTotal Num Links: ', queue$tot_urls,
-              '\nRate: ', round((print_cnt)/thisDt,1), 'Pages/Sec.',
+              '\nRate: ', round(queue$tot_fetched/thisDt,1), 'Pages/Sec.',
               '\nComments:', comments,
               '\nDate/Time:', Sys.time(),
               '\n\n'),
         con = log_con)
-    }
-
-    # The pool of links
-    pool  <- curl::new_pool(total_con = max_concurr, host_con = max_host)
-
-    ## connect to fetch_db database
-    fetch_db<- grep('\\.sqlite',dir(this_dir),value=T)
-    if(NROW(fetch_db)==0) stop(paste('unable to find fetch_db in ',this_dir))
-    fetch_db<-DBI::dbConnect(RSQLite::SQLite(), paste0(this_dir,fetch_db))
-
-    ## use max_host to group in batches if max_host >1
-    if(max_host>1){
-      DBI::dbSendQuery(
-        fetch_db,
-        paste0("update fetch_list set batch = floor(batch/(",max_host,"+0.1)) + 1"))
     }
 
     ## get number urls in batch
@@ -246,14 +157,28 @@ fetchR_parseR_edit<- function(
                where batch = ",batch))
     }
 
-    ## load a batch of urls from fetch list
-    load_fetch_db_batch<-function(fetch_db,batch=1,offset=0,limit=10000){
+    ## load a batch of urls from fetch list and sets queue values
+    queue_batch<-function(fetch_db,batch=1,offset=0,limit=100000){
+      
+      q<-paste("select * from fetch_list 
+               where batch = ",batch,"limit",limit,"offset",offset)
+      
+      fetch_list<-DBI::dbGetQuery(fetch_db,q) 
+      
+      ## update batch number, depth, and fetch list
       queue$batch<-batch
-      DBI::dbGetQuery(
-        fetch_db,
-        paste("select url from fetch_list
-               where batch = ",batch,"offset",offset,"limit",limit))
+      queue$fetch_list<-fetch_list$url
+      queue$depth <- fetch_list$depth
+
+      #queue$depth<-fetch_list$depth
+      ## push into fetcher
+      for(i in 1:(min(queue$queue_size,NROW(queue$fetch_list)))){
+        do_fetch(url=queue$fetch_list[1],depth=queue$depth[i],json_out=json_out)
+        queue$fetch_list <- queue$fetch_list[-1]
+        queue$depth <- queue$depth[-1]
+      }
     }
+    
 
     ## the queue...
     queue <- new.env()
@@ -265,22 +190,18 @@ fetchR_parseR_edit<- function(
     queue$queue_size <- max_concurr*queue_scl
     queue$urls<-c()
     queue$batch_count <-  DBI::dbGetQuery(
-      fetch_db,paste("select count(distinct batch) from fetch_list"))
+      fetch_db,paste("select count(distinct batch) batch_count from fetch_list"))$batch_count
     queue$fetch_list<-list()
-
+    
+    
     ## initialize a batch of urls
-    queue$fetch_list<-load_batch(fetch_db,batch=1)
-
-    ## Push initial urls into pool
-    lapply(1:min(queue$queue_size, length(queue$urls)), function(i){
-      do_fetch(queue$urls[i],queue$depth[i],out_dir,json_out)
-      queue$links_in_queue <- queue$links_in_queue+1
-    })
+    queue_batch(fetch_db,batch=1)
 
     ## Start timer and run queue
-    print_time <- Sys.time()
     queue$init_time <- Sys.time()
-    out <- curl::multi_run(pool = pool, timeout = timeout)
+    queue$status$pending<-NULL
+    queue$status<-curl::multi_run(pool = pool, timeout = timeout)
+     
 
   },
   error = function(e){
@@ -292,14 +213,10 @@ fetchR_parseR_edit<- function(
   },
   finally = {
 
-    rm(list=ls(fetch_list_env),envir=fetch_list_env)
     rm(list=ls(queue),envir=queue)
-
 
     close(json_out)
 
-
-    writeLines(paste('fetchR: Saving Page Data.'), con = log_con)
     writeLines(paste('fetchR: Done Saving Page Data.'),con = log_con)
 
     if(class(log_con)[1]=="file") close(log_con)

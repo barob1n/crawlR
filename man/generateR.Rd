@@ -12,7 +12,6 @@ generateR(
   max_depth = NULL,
   topN = NULL,
   external_site = F,
-  max_host = NULL,
   max_urls_per_host = 10,
   crawl_delay = NULL,
   log_file = NULL,
@@ -35,7 +34,7 @@ generateR(
 
 \item{external_site}{Logical. If False, host outside the seed list will NOT be crawled.}
 
-\item{max_urls_per_host}{Max URL's to generate per host.}
+\item{max_urls_per_host}{Max number of URL's to generate per host.}
 
 \item{crawl_delay}{crawl delay for requests to the same host}
 

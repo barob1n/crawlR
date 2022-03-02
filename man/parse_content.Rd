@@ -4,19 +4,13 @@
 \alias{parse_content}
 \title{General Parser for HTML}
 \usage{
-parse_content(res, readability, readability_content = F, map_meta = NULL)
+parse_content(doc)
 }
 \arguments{
-\item{res}{Return value from curl.}
-
-\item{readability}{not used}
-
-\item{readability_content}{not used}
-
-\item{map_meta}{not used}
+\item{doc}{html content returned by xml2.}
 }
 \value{
-Returns character vector of links, or error message.
+
 }
 \description{
 Extracts the title, h1 headers, major meta-tags, and body tags from a page.

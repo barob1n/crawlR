@@ -271,7 +271,7 @@ find_last_dir <- function(this = "fetch_", out_dir){
 #' @export
 #'
 
-parse_content_fetch <- function(res, readability, readability_content=F, map_meta=NULL){
+parse_content_fetched <- function(res, readability, readability_content=F, map_meta=NULL){
 # url<-"https://www.automotivelogistics.media/digital-technology/bmw-dingolfing-developing-industry-40-technology-for-logistics/40180.article"
 # url<- "https://www.zamilsteel.com/ssd/en/2017-06-07-zamil-structural-steel-wins-sar-34m-contract-ethane-deep-recovery-facility-project"
 # res<-curl::curl_fetch_memory(url)
@@ -355,35 +355,61 @@ grep_meta<-'content-language|description|keywords|twitter:card|twitter:title|twi
 
 }
 
-#' General Parser for HTML
-#'
-#' @description
-#' Extracts the title, h1 headers, major meta-tags, and body tags from a page.
-#'
-#' @param res Return value from curl.
-#' @param readability not used
-#' @param readability_content not used
-#' @param map_meta not used
-#' @return Returns character vector of links, or error message.
+#' extract links
+#' 
+#' @description 
+#' takes html content and returns absolute url links
+#' 
+#' @param doc html document
+#' @param base_url base url for extracted links
 #' @export
-#'
+#' 
+extract_links <- function(doc,base_url){
+  links <- xml2::xml_find_all(doc,'//a')
+  links <- xml2::xml_attr(links,'href')
+  xml2:::url_absolute(links ,base_url)
+}
 
-parse_content <- function(res, readability, readability_content=F, map_meta=NULL){
-  # url<-"https://www.automotivelogistics.media/digital-technology/bmw-dingolfing-developing-industry-40-technology-for-logistics/40180.article"
-  # url<- "https://www.zamilsteel.com/ssd/en/2017-06-07-zamil-structural-steel-wins-sar-34m-contract-ethane-deep-recovery-facility-project"
-  # url<-"https://www.cnn.com"
-  # res<-curl::curl_fetch_memory(url)
-  # res$content<-rawToChar(res$content)
-  filter_tags <- function(tag){
-    tag_docs <- rvest::html_nodes(doc, tag ) %>% rvest::html_text()
-    return(tag_docs)
-  }
 
-  filter_tags_xml2 <- function(doc,tag){
-    tags<-xml2::xml2_find_all(doc,paste0('//',tag))
-    xml2::xml_text(tags)
-  }
+#' extract html tags
+#' 
+#' @description 
+#' takes html content and returns text from html tags
+#' 
+#' @param doc html document
+#' @param tag tag to extract - h1,div,body,etc...
+#' @export
+#' 
+extract_tags <- function(doc,tag){
+  tag_docs <- rvest::html_nodes(doc, tag ) 
+  rvest::html_text(tag_docs,trim=TRUE)
+}
 
+
+#' extract html tags
+#' 
+#' @description 
+#' takes html content and returns text from html tags
+#' 
+#' @param doc html document
+#' @param tag tag to extract - h1,div,body,etc...
+#' @export
+#' 
+extract_tags_xml2 <- function(doc,tag){
+  tags<-xml2::xml_find_all(doc,paste0('//',tag))
+  xml2::xml_text(tags,trim=T)
+}
+
+#' extract meta tags
+#' 
+#' @description 
+#' takes html content and returns text from html meta tags
+#' 
+#' @param doc html document
+#' @export
+#' 
+extract_meta <- function(doc){
+  
   map_meta <- list()
   map_meta[['content-language']]= 'meta[http-equiv=content-language]'
   map_meta[['description']]='meta[name=description]'
@@ -397,36 +423,80 @@ parse_content <- function(res, readability, readability_content=F, map_meta=NULL
   map_meta[['og:title']]='meta[property=og\\:title]'
   map_meta[['og:url']]='meta[property=og\\:url]'
   map_meta[['og:name']]='meta[property=og\\:name]'
-
-  parse_meta <- function(doc, map_meta=map_meta){
-    meta<-lapply(map_meta, function(m){
-      doc %>% rvest::html_nodes(m) %>% rvest::html_attr('content')
-    })
-
-    return(meta=meta)
-  }
-
-  tryCatch({
-    doc <- rvest::html(res$content)
-
-    vals <- list()
-    vals[['title']]   <- paste(rvest::html_nodes(doc, "title") %>% rvest::html_text(),collapse= ' ')
-    vals[['content']] <- filter_tags("body")
-    vals[['h1']] <- filter_tags("h1")
-    vals$meta <- parse_meta(doc,map_meta=map_meta)
-    vals$links <- xml2::xml_find_all(doc,'//a')
-    vals$links <- xml2::xml_attr(vals$links,'href')
-    vals$links <- xml2:::url_absolute(vals$link ,res$url)
-    #vals$links <- doc %>% rvest::html_nodes('a') %>% rvest::html_attr('href')
-    #vals$links <- xml2:::url_absolute(vals$link ,res$url)
-    #vals$links <- grep("^https://|^http://", vals$links, value = TRUE)
-    #vals$links <- sub("#.*", "", vals$links)
-    return(vals)
-
-  }, error = function(e){return(NA)} )
+  
+  lapply(map_meta, function(m){
+    rvest::html_attr(rvest::html_nodes(doc,m),'content')
+  })
 }
 
 
+#' General Parser for HTML
+#'
+#' @description
+#' Extracts the title, h1 headers, major meta-tags, and body tags from a page.
+#'
+#' @param doc html content returned by xml2.
+#' @return 
+#' @export
+#'
+
+parse_content <- function(doc){
+
+  parsed <- list()
+
+  parsed[['title']] <- extract_tags_xml2(doc, "title")
+  parsed[['content']] <- extract_tags_xml2(doc,"body")
+  parsed[['h1']] <- extract_tags_xml2(doc,"h1")
+  parsed[['meta']] <- extract_meta(doc)
+
+  return(parsed)
+}
+
+
+
+
+#' Handles extracting links and applying supplied parse function.
+#'
+#' @description
+#' Extracts the links and passes the html doc to the given parser function.
+#'
+#' @param res Return value from curl.
+#' @param parser Supplied parser function.
+#' @param readability not used
+#' @param readability_content not used
+#' @return 
+#' @export
+#'
+
+parser_wrapper <- function(res=NULL, parser=crawlR::parse_content, readability, readability_content=F){
+  # url<-"https://www.automotivelogistics.media/digital-technology/bmw-dingolfing-developing-industry-40-technology-for-logistics/40180.article"
+  # url<- "https://www.zamilsteel.com/ssd/en/2017-06-07-zamil-structural-steel-wins-sar-34m-contract-ethane-deep-recovery-facility-project"
+  # url<-"https://www.cnn.com"
+  # res<-curl::curl_fetch_memory(url)
+  # res$content<-rawToChar(res$content)
+
+  parsed <- list()
+  
+  
+  tryCatch({
+    ## if valid type, parse and write content. otherwise, content=NULL.
+    if(grepl('text',tolower(res$type),fixed=TRUE)){
+      doc <- xml2::read_html(res$content)
+      ## links are always extracted.
+      parsed[['links']] <- extract_links(doc,res$url)
+      parsed<-c(parsed,parser(doc))
+    }
+    
+    res$content<-parsed
+    return(res)
+    
+  }, 
+  error = function(e){
+    res$content<-parsed
+    return(res)
+  })
+  
+}
 
 #' Parse Processor
 #'

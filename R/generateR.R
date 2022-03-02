@@ -10,7 +10,7 @@
 #' @param max_depth maximum depth for selected url's
 #' @param topN Choose these top links.
 #' @param external_site Logical. If False, host outside the seed list will NOT be crawled.
-#' @param max_urls_per_host Max URL's to generate per host.
+#' @param max_urls_per_host Max number of URL's to generate per host.
 #' @param crawl_delay crawl delay for requests to the same host
 #' @param log_file Name of log file. If null, writes to stdout().
 #' @param seeds_only gen only seeds
@@ -24,7 +24,6 @@ generateR <- function(out_dir=NULL,
                       max_depth =NULL,
                       topN = NULL,
                       external_site=F,
-                      max_host=NULL,
                       max_urls_per_host=10,
                       crawl_delay=NULL,
                       log_file=NULL,
@@ -42,6 +41,7 @@ generateR <- function(out_dir=NULL,
     ## Check values
     if(is.null(work_dir)){stop('Work directory was not provided.')}
     if(is.null(out_dir)){stop('Output directory was not provided.')}
+    if(!file.exists(paste0(work_dir,"crawlDB.sqlite"))){stop("Can't find crawlDB. Run inject.R to create.")}
 
     ## these should already be here
     crawlDB <- DBI::dbConnect(RSQLite::SQLite(), paste0(work_dir,"crawlDB.sqlite"))
@@ -138,16 +138,16 @@ generateR <- function(out_dir=NULL,
       }
       return(q)
     }
-
-    # filter both th inner sub query and outer query to speed it up
-    # order by score desc to get best scoring, then by depth asc to get newest.
+    
+    ## base query to select url's
+    base_q = paste0=(
+      "SELECT ROW_NUMBER () 
+       OVER ( PARTITION BY t1.server ORDER BY score desc, depth asc ) batch, t1.* 
+       FROM linkDB t1 ") # ORDER BY is_seed desc,
+   
+    ## create query to select urls with parameters
     q <-generate_query(
-      q = paste("select
-                ROW_NUMBER () OVER (
-                PARTITION BY t1.server
-                ORDER BY score desc, depth asc ) batch,
-                t1.*
-                from linkDB t1 "), # ORDER BY is_seed desc,
+      q = base_q, 
       next_crawl=get_next_crawl(today, 't1'),
       max_depth=get_max_depth(max_depth, 't1'),
       fin=get_filtin(regExIn, 't1'),
@@ -158,29 +158,26 @@ generateR <- function(out_dir=NULL,
       ext_site=external_site,
       min_score=min_score)
 
-    ## add create temp table sql
-    this_date<-as.numeric(Sys.Date())
+    ## create a temporary table for the fetch list using the query.  order by
+    ## score and depth to select most relevant.
     q <- paste("create temporary table fetch_list as ",q,
                " order by score desc, depth asc" )
 
     st<-Sys.time()
     writeLines(paste('GenerateR: Begining generate query - ',st), con=log_con)
 
-    # run query to create fetch list
+    # creating fetch list
     DBI::dbExecute(crawlDB,q)
 
-    ## filter number of urls by host using max_urls_per_host
+    ## filter fetch list so hosts have no more than the allowed max number of url's.
     DBI::dbExecute(crawlDB,paste0("delete from fetch_list where batch > ",max_urls_per_host))
 
-    ## filter number of urls by topN
+    ## filter total number of urls in fetch list
     DBI::dbExecute(crawlDB,paste0(
       "delete from fetch_list where url not in (
          select url from fetch_list ",get_limit(topN), " )")) # order by is_seed desc, RANDOM()
 
-    ## query the final fetch list
-    fetch_list<- DBI::dbGetQuery(crawlDB, paste0('select * from fetch_list'))
-    fetch_list$RowNum <- NULL
-
+    ## end time for query
     et <- Sys.time()
 
     ## write log info
@@ -197,23 +194,29 @@ generateR <- function(out_dir=NULL,
 
     ## create fetch_db, attach, and insert fetch_list table
     fetchDB_fname <-path.expand(paste0(this_dir,"fetch_list.sqlite"))
-    fetchDB <- DBI::dbConnect(RSQLite::SQLite(),fetchDB_fname )
-    DBI::dbExecute(crawlDB, 
-      paste0("attach database '",fetchDB_fname,"' as fetch_db; 
-             insert into fetch_db fetch_list; 
-             select * from fetch_list;"))
+    DBI::dbExecute(crawlDB, paste0("attach database '",fetchDB_fname,"' as fetch_db;"))
+    DBI::dbExecute(crawlDB, "create table fetch_db.fetch_list(batch integer, depth integer ,url text, host text);")
+    DBI::dbExecute(crawlDB, "insert into fetch_db.fetch_list select batch, depth, url, host from fetch_list;")
+    DBI::dbExecute(crawlDB, "detach database fetch_db;")
     
-    ## faster subset of batches
-    DBI::dbExecute(fetchDB,'CREATE INDEX url ON fetch_list(batch)')
+    ## faster subset of batches on big lists
+    fetchDB <- DBI::dbConnect(RSQLite::SQLite(),fetchDB_fname )
+    DBI::dbExecute(fetchDB, "create index batch ON fetch_list(batch);")
+    DBI::dbDisconnect(fetchDB)
     
     ## drop temp table fetch_list
     DBI::dbExecute(crawlDB, " drop table fetch_list")
 
-    ## prep and save fetch list for output
-    fetch_list <- create_fetch_list(fetch_list,crawl_delay)
-    save(fetch_list,file=paste0(this_dir,'fetch_list.rda'))
-    f_out<-gzfile(paste0(this_dir,'fetch_list.csv.gz'))
-    write.csv(fetch_list, file=f_out)
+    # ## query the final fetch list
+    # fetch_list<- DBI::dbGetQuery(crawlDB, paste0('select * from fetch_list'))
+    # fetch_list$RowNum <- NULL
+    # 
+    # ## prep and save fetch list for output
+    # fetch_list <- create_fetch_list(fetch_list,crawl_delay)
+    
+    #save(fetch_list,file=paste0(this_dir,'fetch_list.rda'))
+    #f_out<-gzfile(paste0(this_dir,'fetch_list.csv.gz'))
+    #write.csv(fetch_list, file=f_out)
 
   },
   error = function(e){

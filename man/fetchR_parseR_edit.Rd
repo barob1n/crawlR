@@ -10,14 +10,20 @@ fetchR_parseR_edit(
   fetch_list = NULL,
   crawl_delay = NULL,
   max_concurr = NULL,
-  max_host = NULL,
+  max_concurr_host = NULL,
   timeout = Inf,
   timeout_request = NULL,
   queue_scl = 1,
   comments = "",
   log_file = NULL,
   readability_content = F,
-  parser = crawlR::parse_content_fetch
+  parser = crawlR::parse_content,
+  writer = NULL,
+  status_print_interval = 500,
+  curl_opts = list(`User-Agent` =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36",
+    `Accept-Language` = "en;q=0.7", Connection = "close", CURLOPT_DNS_CACHE_TIMEOUT =
+    "3600")
 )
 }
 \arguments{
@@ -31,7 +37,7 @@ fetchR_parseR_edit(
 
 \item{max_concurr}{Max. total concurrent connections open at any given time.}
 
-\item{max_host}{Max. total concurrent connections per host at any given time.}
+\item{max_concurr_host}{Max. total concurrent connections per host at any given time.}
 
 \item{timeout}{Total (all requests) timeout}
 
@@ -46,6 +52,12 @@ fetchR_parseR_edit(
 \item{readability_content}{T}
 
 \item{parser}{parse func}
+
+\item{writer}{placeholder to allow custom output functions}
+
+\item{status_print_interval}{num urls fetched between crawler status outputs}
+
+\item{curl_opts}{list of curl options}
 }
 \description{
 Fetches list of URL's created by the generateR() function.

@@ -30,7 +30,7 @@
 #' @param work_dir (Required) Main working directory.
 #' @param out_dir  Directory to store crawled and parsed html If null defaults to work directory.
 #' @param max_concurr Max. total concurrent connections open at any given time.
-#' @param max_host Max. total concurrent connections per host at any given time.
+#' @param max_concurr_host Max. total concurrent connections per host at any given time.
 #' @param timeout Total (as in all url's in seed list) time per each iteration (for each depth).
 #' @param timeout_request per url timeout.
 #' @param external_site If true, crawler will follow external links.
@@ -76,7 +76,7 @@
 #'        work_dir="~/crawl/",
 #'        out_dir = "~/crawl/news/",
 #'        max_concurr = 50,
-#'        max_host = 5,
+#'        max_concurr_host = 5,
 #'        timeout = Inf,
 #'        external_site = F,
 #'        crawl_delay=5,
@@ -96,7 +96,7 @@ crawlR <- function(
     work_dir=NULL,
     out_dir = NULL,
     max_concurr = 50,
-    max_host = 1,
+    max_concurr_host = 1,
     timeout = Inf,
     timeout_request=30,
     external_site = F,
@@ -126,8 +126,8 @@ crawlR <- function(
       if(!grepl('/$',out_dir)) out_dir<-paste0(out_dir,'/')
       if(!grepl('/$',work_dir)) work_dir<-paste0(work_dir,'/')
 
-      ## get input parameters
-      for(n in names(formals(crawlR))){
+      ## get input parameters to write to log file
+      for(n in names(formals(crawlR::crawlR))){
         v<-get(n)
         if(n=='seeds') v<-NROW(v)
         if(class(v)=='function') v<-paste(n,'<- function()') ## use name if function
@@ -175,7 +175,6 @@ crawlR <- function(
                        max_depth=max_depth,
                        topN = topN,
                        external_site=external_site,
-                       max_host=max_host,
                        max_urls_per_host = max_urls_per_host,
                        crawl_delay=crawl_delay,
                        log_file = log_file,
@@ -188,7 +187,7 @@ crawlR <- function(
 
         ## this_dir - directory for current crawl iteration
         this_dir <- paste0(find_last_dir(out_dir=gsub('/$','',out_dir)),"/")
-
+        # out_dir <- this_dir
         # if(!file.exists(paste0(this_dir,'fetch_list.rda'))){
         #   write_log(paste('crawlR: Nothing to fetch.\n'), log_file)
         #   break
@@ -202,7 +201,7 @@ crawlR <- function(
                     fetch_list=NULL,
                     crawl_delay=crawl_delay,
                     max_concurr=max_concurr,
-                    max_host=max_host,
+                    max_concurr_host=max_concurr_host,
                     timeout=timeout,
                     timeout_request=timeout_request,
                     queue_scl=queue_scl,

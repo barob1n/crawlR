@@ -51,9 +51,5 @@ fetchR_parseR(
 None.
 }
 \description{
-Based on the curl package (a wrapper for libcurl). The fetch list
-of urls is organized into batches, with each batch containing one
-url from one host. Provides a convienent way to avoid
-hitting a server too often.  A delay also kicks in if a host is
-being queried too quickly.
+Fetch a List of Url's.
 }

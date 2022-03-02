@@ -9,7 +9,7 @@ crawlR(
   work_dir = NULL,
   out_dir = NULL,
   max_concurr = 50,
-  max_host = 1,
+  max_concurr_host = 1,
   timeout = Inf,
   timeout_request = 30,
   external_site = F,
@@ -42,7 +42,7 @@ will be added to linkDB and fetched.}
 
 \item{max_concurr}{Max. total concurrent connections open at any given time.}
 
-\item{max_host}{Max. total concurrent connections per host at any given time.}
+\item{max_concurr_host}{Max. total concurrent connections per host at any given time.}
 
 \item{timeout}{Total (as in all url's in seed list) time per each iteration (for each depth).}
 
