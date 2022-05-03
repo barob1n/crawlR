@@ -23,7 +23,7 @@ crawlR(
     work_dir=NULL,
     out_dir = NULL,
     max_concurr = 50,
-    max_host = 1,
+    max_concurr_host = 1,
     timeout = Inf,
     timeout_request=30,
     external_site = F,
@@ -55,7 +55,7 @@ Argument      |Description
 ```work_dir```     |     (Required) Working to store results.
 ```out_dir```     |     Directory to store results. If NULL defaults to work directory.
 ```max_concurr```     |     Max. total concurrent connections open at any given time.
-```max_host```     |     Max. total concurrent connections per host at any given time.
+```max_concurr_host```     |     Max. total concurrent connections per host at any given time.
 ```timeout```     |     Total (as in all url's in fetch list) time per each iteration (for each depth).
 ```timeout_request```	| Per url timeout.
 ```external_site```     |     If true, crawler will follow external links.
@@ -100,7 +100,7 @@ crawlR(seeds = seeds,
   work_dir="~/crawl",
   out_dir = "~/crawl/news/",
   max_concurr = 50,  
-  max_host = 5,
+  max_concurr_host = 5,
   timeout = Inf,
   external_site = F,
   crawl_delay=1,
@@ -122,7 +122,7 @@ crawlR(seeds = NULL,       # no seeds - will query crawlDB
   work_dir= "~/crawl/",
   out_dir = "~/crawl/news/",
   max_concurr = 50,
-  max_host = 5,
+  max_concurr_host = 5,
   timeout = Inf,
   external_site = F,
   crawl_delay=1,
@@ -143,7 +143,7 @@ crawlR(seeds = new_seeds,  # seeds will be added to crawlDB
   work_dir= "~/crawl/",
   out_dir = "~/crawl/auto/",
   max_concurr = 50,
-  max_host = 5,
+  max_concurr_host = 5,
   timeout = Inf,
   external_site = F,
   crawl_delay=1,
