@@ -115,7 +115,7 @@ crawlR(seeds = seeds,
   
 ## Crawl again, this time using filters.
  
-filter_in=paste0("police,shooting,gun control")
+filter_in=NULL
 filter_out=paste0("sports,weather")
  
 crawlR(seeds = NULL,       # no seeds - will query crawlDB
