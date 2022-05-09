@@ -2,7 +2,6 @@
 
 ## Description
 
-
  Batch based web crawler that utilizes the asynchronous features of R's curl package to crawl through a
  list of user supplied websites.  
  
