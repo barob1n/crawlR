@@ -13,7 +13,6 @@
  4. *Repeat*
 
  
-
 ## Usage
 
 ```r
