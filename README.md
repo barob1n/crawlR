@@ -82,7 +82,7 @@ Argument      |Description
  pages are read from disk, parsed, and writen
  back to disk. 
 
-
+  
 ## Examples
 
 ```r 
