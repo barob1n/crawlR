@@ -168,7 +168,7 @@ crawlR <- function(
         st_arr[lvl]<-as.numeric(Sys.time())
 
         ## call generateR to generate a fetch list
-        val<-generateR(out_dir=out_dir,
+        val<-crawlR::generateR(out_dir=out_dir,
                        work_dir=work_dir,
                        regExOut=regExOut,
                        regExIn=regExIn,
@@ -196,7 +196,7 @@ crawlR <- function(
         write_log(paste('crawlR: Starting Fetcher -', Sys.time()), log_file)
 
         ## fetchR_parseR - fetch links output by generateR
-        val<-fetchR_parseR(out_dir=this_dir,
+        val<-fetchR_parseR_edit(out_dir=this_dir,
                     work_dir=work_dir,
                     fetch_list=NULL,
                     crawl_delay=crawl_delay,
@@ -248,7 +248,8 @@ crawlR <- function(
     },
     error = function(e){
       write_log(paste('crawlR: ',e), log_file)
-      stop(paste(val))
+      paste(val)
+      #stop(paste(val))
     },
     finally = {
     }
